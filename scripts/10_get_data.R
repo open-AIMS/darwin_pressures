@@ -41,7 +41,7 @@ source('../scripts/functions.R')
 ## PRIMARY data
 {
     ## ---- get data PRIMARY
-    primary <- read_excel(paste0(DATA_PATH, "/primary/Primary Point Source Dataset_22.xlsx"),
+    primary <- read_excel(paste0(DATA_PATH, "primary/Primary Point Source Dataset_22.xlsx"),
                      sheet = "Point sources-Primary DB",
                      trim_ws = TRUE)
     ## ----end

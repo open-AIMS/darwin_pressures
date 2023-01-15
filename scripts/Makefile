@@ -2,7 +2,7 @@ R_SRC_DIR  = $(addprefix , scripts)
 ifdef FILE
 R_FILE = $(R_SRC_DIR)/$(FILE)
 else
-R_FILE ?= $(foreach sdir, $(R_SRC_DIR), $(wildcard $(sdir)/*.R))
+R_FILE ?= $(foreach sdir, $(R_SRC_DIR), $(wildcard $(sdir)/00*.R))
 endif
 
 $(info ************************************)
