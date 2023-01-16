@@ -162,7 +162,6 @@ FOCAL_RESPS <- var_lookup %>%
         height = 10,
         dpi = 72
     )
-  ) 
     ## ----end
     ## ---- process data 2012_2015 map
     ggplot() +
