@@ -86,6 +86,7 @@ FOCAL_RESPS <- var_lookup %>%
            height = 8,
            dpi = 72)
     ## ----end
+    cat("Spatial objects processed\n\n")
 }
 
 ## WQ
@@ -338,6 +339,7 @@ FOCAL_RESPS <- var_lookup %>%
            height = 10,
            dpi = 72)
     ## ----end
+    cat("WQ data processed\n\n")
 }
 
 ## PRIMARY
@@ -515,6 +517,7 @@ FOCAL_RESPS <- var_lookup %>%
            height = 8,
            dpi = 72)
     ## ----end
+    cat("Primary point data processed\n\n")
 }
 
 ## Estimated resident population (ERP)
@@ -530,6 +533,7 @@ FOCAL_RESPS <- var_lookup %>%
         erp
     saveRDS(erp, file = paste0(DATA_PATH, "processed/erp.RData"))
     ## ----end
+    cat("ERP point data processed\n\n")
 }
 
 ## Estimated resident population (ERP)
@@ -671,6 +675,7 @@ FOCAL_RESPS <- var_lookup %>%
     ##        height = 8,
     ##        dpi = 72)
     ## ----end
+    cat("Catchment ERP point data processed\n\n")
 }
 
 ## Fire frequency
@@ -712,6 +717,7 @@ FOCAL_RESPS <- var_lookup %>%
         fire_freq
     saveRDS(fire_freq, file = paste0(DATA_PATH, "processed/fire_freq.RData"))
     ## ----end
+    cat("Fire frequency data processed\n\n")
 
 }
 
@@ -741,6 +747,7 @@ FOCAL_RESPS <- var_lookup %>%
         fire_areas
     saveRDS(fire_areas, file = paste0(DATA_PATH, "processed/fire_areas.RData"))
     ## ----end
+    cat("Fire areas data processed\n\n")
 }
 
 ## Sea level rises (cal year)
@@ -756,6 +763,7 @@ FOCAL_RESPS <- var_lookup %>%
         sea_level_fin
     saveRDS(sea_level_fin, file = paste0(DATA_PATH, "processed/sea_level_fin.RData"))
     ## ----end
+    cat("Sea level data processed\n\n")
     
 }
 
@@ -771,6 +779,7 @@ FOCAL_RESPS <- var_lookup %>%
         rainfall_fin
     saveRDS(rainfall_fin, file = paste0(DATA_PATH, "processed/rainfall_fin.RData"))
     ## ----end
+    cat("Rainfall data processed\n\n")
 }
 
 ## Rainfall anomaly
@@ -785,6 +794,7 @@ FOCAL_RESPS <- var_lookup %>%
         rainfall_anom
     saveRDS(rainfall_anom, file = paste0(DATA_PATH, "processed/rainfall_anom.RData"))
     ## ----end
+    cat("Rainfall anomaly data processed\n\n")
 }
 
 ## Mean air temperature 
@@ -800,6 +810,7 @@ FOCAL_RESPS <- var_lookup %>%
         temp
     saveRDS(temp, file = paste0(DATA_PATH, "processed/temp.RData"))
     ## ----end
+    cat("Air temperature data processed\n\n")
 }
 
 ## Mean air temperature anomaly 
@@ -814,6 +825,7 @@ FOCAL_RESPS <- var_lookup %>%
         temp_anom
     saveRDS(temp_anom, file = paste0(DATA_PATH, "processed/temp_anom.RData"))
     ## ----end
+    cat("Air temperature anomaly data processed\n\n")
 }
 
 ## SOI (fin year) 
@@ -828,6 +840,7 @@ FOCAL_RESPS <- var_lookup %>%
         SOI_fin
     saveRDS(SOI_fin, file = paste0(DATA_PATH, "processed/SOI_fin.RData"))
     ## ----end
+    cat("SOI data processed\n\n")
 }
 
 ## SST anomaly 
@@ -842,6 +855,7 @@ FOCAL_RESPS <- var_lookup %>%
         SST_anom
     saveRDS(SST_anom, file = paste0(DATA_PATH, "processed/SST_anom.RData"))
     ## ----end
+    cat("SST anomaly data processed\n\n")
 }
 
 ## Building activity
@@ -856,6 +870,7 @@ FOCAL_RESPS <- var_lookup %>%
         build
     saveRDS(build, file = paste0(DATA_PATH, "processed/build.RData"))
     ## ----end
+    cat("Building activity data processed\n\n")
 }
 
 ## Ship counts
@@ -872,6 +887,7 @@ FOCAL_RESPS <- var_lookup %>%
         ship
     saveRDS(ship, file = paste0(DATA_PATH, "processed/ship.RData"))
     ## ----end
+    cat("Ship counts data processed\n\n")
 }
 
 
@@ -929,5 +945,6 @@ FOCAL_RESPS <- var_lookup %>%
         full_join(fire_areas) 
     saveRDS(data, file = paste0(DATA_PATH, "processed/data.RData"))
     ## ----end
+    cat("Combine all data processed\n\n")
 }
 
