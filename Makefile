@@ -2,6 +2,8 @@
 # 	@echo "Usage: make -i SRC=<path/file> -> to make a specific file"
 # 	@echo "       make -i                 -> to make all altered files"
 
+SHELL:=/bin/bash
+
 .PHONY: build build_singularity run code_container docs_container R_container code_local docs_local code_singularity docs_singularity
 
 build:
@@ -29,7 +31,7 @@ docs_local:
 
 code_singularity:
 	@echo "Transfer to scripts/Makefile"
-	module load singularity
+	module load singularity; \
 	singularity exec -B .:/home/Project darwin_pressures.sif $(MAKE) -f scripts/Makefile
 
 docs_singularity:
