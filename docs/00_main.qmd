@@ -1,0 +1,1776 @@
+---
+title: Darwin Harbour Water Quality Pressures 
+author: "Murray Logan"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+format: 
+  html:
+    css: resources/style.css
+    toc: true
+    toc-float: true
+    number-sections: true
+    number-depth: 3
+    embed-resources: true
+    code-fold: true
+    code-tools: true
+    code-summary: "Show the code"
+crossref:
+  fig-title: '**Figure**'
+  fig-labels: arabic
+  tbl-title: '**Table**'
+  tbl-labels: arabic
+engine: knitr
+bibliography: resources/references.bib
+output_dir: "docs"
+documentclass: article
+fontsize: 12pt
+mainfont: Arial
+mathfont: LiberationMono
+monofont: DejaVu Sans Mono
+classoption: a4paper
+---
+
+```{r setup, include=FALSE, warnings=FALSE, message=FALSE}
+assignInNamespace('.sep.label',  "^\\ *(#|--)+\\s*(@knitr|----+)(.*?)-*\\s*$", ns='knitr')
+
+tidyverse_style_with_comments_removed <- function() {
+  remove_comments <- function(pd) {
+    is_comment <- pd$token == "COMMENT"
+    pd <- pd[!is_comment,]
+    pd
+  }
+  tidyverse_with_comments_removed <- styler::tidyverse_style()
+  tidyverse_with_comments_removed$token$remove_comments <- remove_comments
+  tidyverse_with_comments_removed
+}
+
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE,cache.lazy = FALSE, tidy='styler',
+                      tidy.opts=list(transformers = tidyverse_style_with_comments_removed()))
+## knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+
+# save the built-in output hook
+hook_output <- knitr::knit_hooks$get("output")
+
+# set a new output hook to truncate text output
+knitr::knit_hooks$set(output = function(x, options) {
+  if (!is.null(n <- options$out.lines)) {
+    x <- xfun::split_lines(x)
+    if (length(x) > n) {
+      # truncate the output
+      x <- c(head(x, n), "....\n")
+    }
+    x <- paste(x, collapse = "\n")
+  }
+  hook_output(x, options)
+})
+options(tinytex.engine = 'xelatex')
+knitr::read_chunk('../scripts/functions.R')
+knitr::read_chunk('../scripts/00_main.R')
+knitr::read_chunk('../scripts/10_get_data.R')
+knitr::read_chunk('../scripts/20_process_data.R')
+knitr::read_chunk('../scripts/30_EDA.R')
+source('../scripts/functions.R')
+
+```
+
+# Background
+The pressure monitoring sub-program within the Integrated Marine
+Monitoring and Research Program (IMMRP) collates data on various
+pressures of perceived relevance to Darwin Harbour. An objective of
+the IMMRP pressure monitoring sub-program is to, where possible,
+explore relationships between pressures (and drivers) and stressor and
+response variables to understand key influences on marine condition,
+and to incorporate ‘multiple lines of evidence’ into condition
+assessments.
+
+ 
+# Project Scope
+This project comprises an exploratory statistical investigation of
+pressure - stressor relationships utilising the water quality data
+underpinning the Darwin Harbour (Water Quality) Report Card as a first
+step toward attribution. The driving question behind the study is what
+if any of the myriad of pressures show relationships.
+
+# About this document
+
+The current standalone (self-contained) HTML document is generated via
+https://quarto.org/ and all R codes used in the underlying analyses
+are embeded herein (albeit behind 'show the code' reveal markers).
+
+```{r loadPackages, warnings=FALSE, message=FALSE, results='hide'}
+```
+
+<details><summary>View a summary of the R environment used at the time
+of the production of this document.</summary>
+
+```{r sessionInfo, echo = FALSE, warnings=FALSE, message=FALSE}
+sessionInfo()
+```
+</details>
+
+# Import data
+
+All of the data were provided via email from Lynda Radke (Wed
+30/09/2022 13:24, Tue 10/01/2023 08:39 and Tue 10/01/2023 08:58) or
+Julia Fortune (Tue 26/09/2022 12:32)
+
+The following sub-sections each correspond to particular sets of
+provided data.  In each of these sub-sections, I provide the code for
+importing the data into R along with a glimpse of the raw data.
+
+::: panel-tabset
+
+## Water quality data
+
+```{r get data WQ, results='markdown', eval=TRUE}
+```
+:::: panel-tabset
+### 2012 - 2015
+
+#### Get data
+```{r get data WQ 2012_2015, results='markdown', eval=TRUE}
+```
+#### Glimpse data
+
+```{r glimpse WQ 2012_2015, results='markdown', eval=TRUE}
+```
+
+### 2016 - 2022
+
+#### Get data
+```{r get data WQ 2016_2022, results='markdown', eval=TRUE}
+```
+#### Glimpse data
+
+```{r glimpse WQ 2016_2022, results='markdown', eval=TRUE}
+```
+
+### 2018 alterations
+
+#### Get data
+```{r get data WQ 2018 alterations, results='markdown', eval=TRUE}
+```
+#### Glimpse data
+
+```{r glimpse WQ 2018 alterations, results='markdown', eval=TRUE}
+```
+
+
+::::
+
+## Primary point data
+
+The word file provides point-source TN, TP, TSS and VSS loads to the
+Harbour at various scales from 2011-12 to 2020-21. I thinks this
+should be self-explanatory.  The excel sheet provide the underlying
+data.
+
+### Get data
+```{r get data PRIMARY, results='markdown', eval=TRUE}
+```
+
+### Glimpse data
+
+```{r glimpse PRIMARY, results='markdown', eval=TRUE}
+```
+
+## Estimated resident population (ERP) and gross regional product (GRP) 
+
+Estimated resident population (ERP) and gross regional product (grp)
+data from 2000-01 to 2021-21 are in the summary data tab. The calcs
+data shows the breakdown of data for Wider Darwin LGAs. I have been
+watching for updates for the 2021-22 financial year but none so far.
+
+### Get data
+```{r get data ERP, results='markdown', eval=TRUE}
+```
+
+### Glimpse data
+
+```{r glimpse ERP, results='markdown', eval=TRUE}
+```
+
+## Catchment ERP
+
+This dataset gives population density data for 2016 to 2020 (year
+ending June 30), including for sub-catchment areas. It will be updated
+in March for 2021 and 2022 but you will probably be finished by then.
+
+### Get data
+```{r get data catchmentERP, results='markdown', eval=TRUE}
+```
+
+### Glimpse data
+
+```{r glimpse catchmentERP, results='markdown', eval=TRUE}
+```
+
+## Fire frequency
+
+This datasets provides fire frequencies for five year windows from
+2000-04 until 2017-21. The data are based on weighted averages (WA)
+for the individual sub-catchments and the overall catchment
+area. Standard deviations (SDs) are also provided. I should be able to
+update this dataset for 2018-22 in December when all fire activity
+should have stopped.
+
+Lynda subsequently provided the 2018-2022 data
+### Get data
+```{r get data fire_freq, results='markdown', eval=TRUE}
+```
+
+### Glimpse data
+
+```{r glimpse fire_freq, results='markdown', eval=TRUE}
+```
+
+## Fire areas
+
+A mixture of worksheets that provide fire scar areas as km2 and
+percentages of the total catchment areas from 2000 to 2021. The data
+are also broken down according to whether or not they formed in early
+dry-season and late dry-season. Totals comprise early+late firescars.
+
+:::: panel-tabset
+
+### Areas
+
+#### Get data
+```{r get data fire_areas, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse fire_areas, results='markdown', eval=TRUE}
+```
+
+### Percentages
+
+#### Get data
+```{r get data fire_areas_p, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse fire_areas_p, results='markdown', eval=TRUE}
+```
+
+::::
+
+## Sea level rise 
+
+This dataset provides BOM monthly sea levels and annual averages of
+the mean monthly sea levels for calendar and financial years.
+
+:::: panel-tabset
+
+### Calendar year
+
+#### Get data
+```{r get data sea_level_cal, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse sea_level_cal, results='markdown', eval=TRUE}
+```
+
+### Financial year
+
+#### Get data
+```{r get data sea_level_fin, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse sea_level_fin, results='markdown', eval=TRUE}
+```
+
+::::
+
+## Temperature/Rainfall/Anomaly
+
+There are a lot of different spreadsheets in this workbook including:
+
+- Annual total rainfall at Darwin airport (calendar) – 1902-2021
+- Monthly rainfall at Darwin airport– 1989 -2022
+- Annual rainfall (financial year) – 1989-90 – 2021-22
+- Rainfall anomaly – 1902-2021
+- Mean air temperature – 1910-2020
+- Mean temperature anomaly – 1910 – 2020
+- Maximum air temperature – 1910 – 2020
+- Maximum temperature anomaly – 1910-2020
+- Monthly SOI (Southern Oscillation Index) – 1989 -2022
+- Annual averages of monthly SOI for financial years and calendar
+  years
+- A long SOI record, from 1876
+- Sea surface temperature (SST) anomaly – 1900 – 2021
+
+Most of the data are from Darwin airport or gauging station.
+
+You should definitely include annual rainfall and SOI data in your
+analyses. Rainfall anomalies and SSTs may also be interesting.
+
+:::: panel-tabset
+
+### Annual rainfall (cal year)
+
+#### Get data
+```{r get data rainfall_cal, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse rainfall_cal, results='markdown', eval=TRUE}
+```
+
+### Annual rainfall (fin year)
+
+#### Get data
+```{r get data rainfall_fin, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse rainfall_fin, results='markdown', eval=TRUE}
+```
+
+### Rainfall anomaly
+
+#### Get data
+```{r get data rainfall_anom, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse rainfall_anom, results='markdown', eval=TRUE}
+```
+
+### Mean air temperature 
+
+#### Get data
+```{r get data temp, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse temp, results='markdown', eval=TRUE}
+```
+
+### Max air temperature anomaly 
+
+#### Get data
+```{r get data temp_anom, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse temp_anom, results='markdown', eval=TRUE}
+```
+
+### SOI (cal year)
+
+#### Get data
+```{r get data SOI_cal, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse SOI_cal, results='markdown', eval=TRUE}
+```
+
+### SOI (fin year)
+
+#### Get data
+```{r get data SOI_fin, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse SOI_fin, results='markdown', eval=TRUE}
+```
+
+### SST anomaly
+
+#### Get data
+```{r get data SST_anom, results='markdown', eval=TRUE}
+```
+
+#### Glimpse data
+
+```{r glimpse SST_anom, results='markdown', eval=TRUE}
+```
+
+::::
+
+## Building activity
+
+These are the costs of total, engineering, residential and
+non-residential building activity from 1987-88 to 2021-22. I realise
+they imperfectly relate to built-up area, which increased by ~40%
+between 2008 and 2016, and then remained relatively
+unchanged. However, periods of major growth are likely to be times of
+higher generalised pressures.
+
+### Get data
+```{r get data build, results='markdown', eval=TRUE}
+```
+
+### Glimpse data
+
+```{r glimpse build, results='markdown', eval=TRUE}
+```
+
+## Ship counts
+
+These are just trade ship counts from Darwin Port from 2011-11 to
+2021-22.
+
+### Get data
+```{r get data ship, results='markdown', eval=TRUE}
+```
+
+### Glimpse data
+
+```{r glimpse ship, results='markdown', eval=TRUE}
+```
+
+:::
+
+
+# Lookup tables
+
+Although each of the data collections provide a (spatio) temporal
+series, they are not all on the same spatial and temporal scales.
+Furthermore, whilst the stressor indicators (water quality samples)
+are collected within the Darwin Harbour water bodies, most (if not
+all) of the pressures are measured from the adjoining sub-catchments
+or else were recorded at the scale of the entire harbour.
+
+To be able to relate stressors to pressures, it is necessary to
+combine the multiple data sources together which in turn necessitates
+finding common scales (both temporal and spatial) in which all
+datasets can be projected.
+
+Since many of the provided pressures are on a annual financial year
+scale, this scale is used as the common temporal scale across all data
+sets.  For the spatial scale, Darwin Harbour Zones are used as these
+are the major spatial unit for the Darwin Harbour Water Quality Report
+Card.
+
+The following sub-sections provide a series of lookup tables that are
+used to map variables from each data set to the common spatial scales,
+provide reporting units and provide some analysis settings.
+
+::: panel-tabset
+
+## Measures lookup
+
+This lookup provides a mapping between the original pressure/stressor
+names (`Var`) and more convenient (shorter) working versions
+(`Measure`) from each `Dataset`.  There are also some additional data
+managment settings associated with each data type.
+
+```{r get data var_lookup, results='markdown', eval=TRUE}
+```
+```{r measures lookup, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/var_lookup.RData")) %>%
+    mutate(Var = str_replace_all(Var,"\\$","\\\\$")) %>%
+    knitr::kable(escape = FALSE)
+```
+
+## Units lookup
+
+This lookup defines the units (and thus figure/table labels) for each
+of the pressure/stressors.
+
+```{r get data units_lookup, results='markdown', eval=TRUE}
+```
+```{r units lookup, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/units_lookup.RData")) %>%
+ mutate(Units = str_replace_all(Units,"\\$","\\\\$"),
+        TableLabel = str_replace_all(TableLabel,"\\$","\\\\$"),
+		FigureLabel = str_replace_all(FigureLabel,"\\$","\\\\$")) %>% 
+ knitr::kable(escape = FALSE)
+```
+
+## Spatial lookup
+
+This lookup defines the Darwin Harbour Water Zone hierarchy.
+
+```{r get data spatial_lookup, results='markdown', eval=TRUE}
+```
+```{r spatial lookup, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Spatial sub-catchments lookup
+
+This lookup defines the Darwin Harbour sub-catchments and maps these
+to Darwin Harbour Water Zones.  There are also additional settings
+that can be used in the preparation of maps. Note, the spelling of
+`Michett Creek` and `Leichhardt Creek`.  This is the spelling provided
+in the Darwin Harbour shapefiles, however the spellings are different
+in the various excel spreadsheets.  I have opted to honour the
+spellings in the shapefiles.
+
+```{r get data spatial_subcatchments_lookup, results='markdown', eval=TRUE}
+```
+```{r spatial subcatchments lookup, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_subcatchments_lookup.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Primary point spatial lookup
+
+This lookup provides settings that can be used in the preparation of
+maps for the primary point data.
+
+```{r get data spatial_lookup_primary, results='markdown', eval=TRUE}
+```
+```{r spatial lookup primary, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_primary.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Catchment ERP spatial lookup
+
+This lookup provides a mapping between the catchment names supplied in
+the `Catchment ERP` data and the standardised names used across all
+datasets. Note, the spelling of `Michett Creek` and `Leichhardt
+Creek`.
+
+```{r get data spatial_lookup_catchment_erp, results='markdown', eval=TRUE}
+```
+```{r spatial lookup catchment_erp, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_catchment_erp.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Fire frequency spatial lookup
+This lookup provides a mapping between the catchment names supplied in
+the `FireFreq` data and the standardised names used across all
+datasets.  Note, the spelling of `Michett Creek` and `Leichhardt
+Creek`.
+
+```{r get data spatial_lookup_fire, results='markdown', eval=TRUE}
+```
+```{r spatial lookup fire, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_fire.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Fire areas spatial lookup
+This lookup provides a mapping between the catchment names supplied in
+the `FireAreas` data and the standardised names used across all
+datasets.  Note, the spelling of `Michett Creek` and `Leichhardt
+Creek`.
+
+```{r get data spatial_lookup_fire_areas, results='markdown', eval=TRUE}
+```
+```{r spatial lookup fire areas, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_fire_areas.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+:::
+
+
+# Process data
+
+```{r load lookups, results='markdown', eval=FALSE}
+```
+
+::: panel-tabset
+
+## Spatial data
+
+:::: panel-tabset
+
+### Darwin Harbour
+```{r load spatials, results='markdown', eval=FALSE}
+```
+```{r process data spatial map, results='markdown', eval=FALSE}
+```
+![Map of Darwin Harbour illustrating the Zones.](../output/figures/map_spatial.png){#fig-spatial-map}
+
+```{r process spatial glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "primary/spatial.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+### Sub-catchments
+
+```{r load spatials subcatchments, results='markdown', eval=FALSE}
+```
+```{r process data spatial subcatchments map, results='markdown', eval=FALSE}
+```
+![Map of Darwin Harbour sub-catchments](../output/figures/map_spatial_subcatchments.png){#fig-spatial-map-catchments}
+
+```{r process spatial subcatchments glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "primary/spatial_subcatchments.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+::::
+
+## Water Quality
+
+:::: panel-tabset
+
+### 2012-2015
+
+Processing steps:
+
+- standardise field names to be consistent with 2016-2022 data set
+- only retain response variables that are common to both 2012-2015 and
+  2015-2022 data sets
+- provide short names for response variables
+- format date
+- add spatial context
+
+```{r process data 2012_2015, results='markdown', eval=FALSE}
+```
+
+::::: panel-tabset
+
+#### Design
+```{r process data 2012_2015 design, results='markdown', eval=FALSE}
+```
+
+![Broad spatio-temporal design of the observed water quality data.  Solid dots indicate the presence of data.](../output/figures/design_wq_2012.png){#fig-wq-2012-design}
+
+
+#### Spatial
+
+```{r process data 2012_2015 map, results='markdown', eval=FALSE}
+```
+
+![Spatial distribution of sampling locations between 2012 and 2015](../output/figures/map_wq__2012_2015.png){#fig-wq-2012-spatial}
+
+#### Data glimpse
+
+```{r process data 2012_2015 glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/wq_2012.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+
+:::::
+
+### 2016-2022
+
+The 2016-2022 data contain both `Discrete` and `CFM` (Continuous Flow
+Management) data.  The `Discrete` data are collected via grab samples
+and typically are collected at specific locations repeatedly on an
+annual schedule. 
+
+Whilst the relatively small number of discrete sampling locations does
+mean that the estimates are biased towards the sampling locations
+(that is, they are not necessarily fully representative of the entire
+Zone from which they are collected), this design does make it easier
+to detect temporal trends (since the bias remains relatively constant
+over time) for a given sampling effort.
+
+By contrast, `CFM` data are collected via a system that draws water
+samples at regular intervals, analyses them and couples the with a GPS
+for geocoding. These data are not necessarily replicated over time and
+thus, whilst potentially more spatially representative, if not
+replicated annually, the biases in estimates will fluctuate and
+potentially mask temporal trends.
+
+Since the purpose of this study is to relate temporal trends in the
+pressures and stressors, it is more appropriate to work primarily with
+the discrete data.
+
+Issues:
+
+- there are a large number of records without Latitude/Longitude.
+  These are all `CFM` values.  I could either exclude them, or else
+  give them Lat/Longs
+- concernedly, there are 54 records in which the Latitude and
+  Longitude values are clearly swapped around.  These all occur in the
+  2017 data.
+- in the 2016 data, there are some `CFM` records that have
+  Latitude/Longitude values of "too_big" and thus NA - I will exclude
+  these
+- in the 2018 data, there are a large number of `Discrete` records
+  that seem to be `CFM` (they appear in transects).  This is going to
+  make it difficult to filter out all the `CFM` data.
+- there are a few examples in which the spatial hierarchy seems to
+  break down.  That is, there are Zones in Regions they should not be
+  in.  E.g. Zone 1 (Outer Harbour) should be in the "Outer" Region.
+  However, there are records in the input data in which there are Zone
+  1, "Inner" Region. 
+
+
+Processing steps:
+
+- attempt to correct the Latitude values that are stored as longitudes
+  and vice verse.
+- attempt to recode and "Discrete" `Source` values that have "CFM"
+  `SAMPTYPE` as "Discrete"
+- format date
+- pivot longer according to the focal response variables
+- provide short names for response variables
+- to prevent issues of joining based on the spatial hierarchy
+  inconsistencies (with Region), I will remove the `Region` field
+  prior to join.
+- provide spatial context
+
+```{r process data 2016_2022, results='markdown', eval=FALSE}
+```
+
+::::: panel-tabset
+
+#### Design
+
+The following is supposed to be purely "Discrete" samples, but I am
+struggling to come up with the logic to support this given the issues
+describe above.  There are clearly still "CFM" samples present in
+2018.
+
+```{r process data 2016_2022 design, results='markdown', eval=FALSE}
+```
+![Broad spatio-temporal design of the observed water quality data.  Solid dots indicate the presence of data.](../output/figures/design_wq_2016.png){#fig-wq-2016-design}
+
+#### Spatial
+
+```{r process data 2016_2022 map, results='markdown', eval=FALSE}
+```
+
+The following is supposed to be purely "Discrete" samples, but I am
+struggling to come up with the logic to support this given the issues
+describe above.  There are clearly still "CFM" samples present in
+2018.
+
+![Spatio-temporal distribution of sampling locations between 2016 and 2022](../output/figures/map_wq__2016_2022.png){#fig-wq-2016-spatial}
+
+The following are all samples ("CFM" and "Discrete").
+
+![Spatial distribution of sampling locations between 2016 and 2022](../output/figures/map_wq__2016_2022_all.png){#fig-wq-2016-spatial1}
+
+#### Data glimpse
+
+```{r process data 2016_2022 glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/wq_2016.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+
+:::::
+
+### 2018 alterations
+
+
+Processed the same as the 2016-2022 data.
+
+```{r process data 2018 alterations, results='markdown', eval=FALSE}
+```
+
+::::: panel-tabset
+
+#### Design
+
+```{r process data 2018 alterations design, results='markdown', eval=FALSE}
+```
+
+![Broad spatio-temporal design of the observed 2018 water quality data.  Solid dots indicate the presence of data.](../output/figures/design_wq_2018.png){#fig-wq-2018-design}
+
+#### Spatial
+
+```{r process data 2018 alterations map, results='markdown', eval=FALSE}
+```
+
+![Spatio-temporal distribution of sampling locations in 2018](../output/figures/map_wq__2018.png){#fig-wq-2018-spatial}
+
+![Spatio-temporal distribution of sampling locations in 2018](../output/figures/map_wq__2018_all.png){#fig-wq-2018_all-spatial}
+
+:::::
+
+### Routine sites
+
+To help identify samples that would be considered routine from those
+that are temporally unique (such as those collected via some sort of
+underway system, Julia Fortune has provided a list of the routine
+sites (along with there Lat/Longs).
+
+```{r process data Routine sites, results='markdown', eval=FALSE}
+```
+
+```{r process data Routine sites map, results='markdown', eval=FALSE}
+```
+
+![Spatio distribution of routine sampling locations](../output/figures/map_wq__routine_sites.png){#fig-wq-routine-spatial}
+
+### Combine data
+
+- row bind 2012-2015 and 2016-2022 data sets together
+- add additional spatial information (such as Area, Region and Zone
+  Names)
+- pivot the data wider to express each response in their own column
+
+Note, when pivoting, it was necessary to aggregate duplicates (means).
+There were instances in which there were multiple Values for the same
+response at the same time and location.  For example, there are two
+Chlorophyll-a values (11.570 and 9.780) sampled on 07/07/2014 at
+location (131.0372, -12.38608).  These records are on rows 80 and 2454
+of the original `2014.csv` input file.
+
+```{r process data wq combine, results='markdown', eval=FALSE}
+```
+::::: panel-tabset
+
+#### Design
+
+##### Routine sites
+
+```{r process data combine design Routine, results='markdown', eval=FALSE}
+```
+
+![Broad spatio-temporal design of the routine observed water quality data.  Solid dots indicate the presence of data.](../output/figures/design_wq_routine.png){#fig-wq-design-routine}
+
+##### Discrete samples
+
+```{r process data combine design, results='markdown', eval=FALSE}
+```
+
+![Broad spatio-temporal design of the observed water quality data.  Solid dots indicate the presence of data.](../output/figures/design_wq.png){#fig-wq-design}
+
+#### Spatial
+
+##### Routine
+
+```{r process data combine map Routine, results='markdown', eval=FALSE}
+```
+
+![Spatio-temporal distribution of routine sampling locations between 2012 and 2022](../output/figures/map_wq_routine.png){#fig-wq-spatial-routine}
+
+##### Discrete samples
+
+```{r process data combine map, results='markdown', eval=FALSE}
+```
+
+<!--
+The following is supposed to be purely "Discrete" samples, but I am
+struggling to come up with the logic to support this given the issues
+describe above.  There are clearly still "CFM" samples present in
+2018.
+-->
+
+![Spatio-temporal distribution of all sampling locations between 2012 and 2022](../output/figures/map_wq.png){#fig-wq-spatial}
+
+#### Data glimpse
+
+```{r process data glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/wq.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+
+:::::
+
+::::
+	
+## Primary point data
+
+<!--
+Questions for Lynda:
+
+1. Why are there missing lat/longs?
+2. Why are there missing Catchment values?
+3. Why dont the values in Catchment match those in the other datasets
+   and the shapefiles?
+4. To relate these data to the water quality data, there needs to be a
+   way to align the two data sets spatially.  Given that they primary
+   point data are collected at different locations to the water
+   quality data, I will need some other form of spatial association.
+   For example, I could align them according to Zone.  However, as
+   many of the primary point data are collected outside of the Zones,
+   I would have to have a lookup table to assign Zones to the primary
+   point observations.  Although I could just base it on which Zone
+   they are closest to, this might not be the most appropriate.  For
+   example, the primary point data includes a field `Recieving zone`
+   that has values of either `Inner` or `Outer` - however `Woods Inlet` 
+   would be most closely aligned with `Central Harbour` if I
+   was to assign based on closeness...  I could simply use `Inner` and
+   `Outer`, but these seem very course...  Any thoughts?
+-->
+
+Processing steps:
+
+- correct spelling of `Site` of "Territory Generation DP1" to
+  "Territory Generation ADP1"
+- format date of year end
+- there are duplicate values (multiple values collected on same
+  date/site - these are all Waste Discharge Licence) - I will remove
+  this category as it is not really a Parameter
+- many of the fields in this dataset are superfluous or not fit for
+  the current purpose (some because the fields are inconsistent).  I
+  will remove all but `Site`, `Year`, `Load`, `Parameter`, `Latitude`
+  and `Longitude`.
+- use a lookup table to fill in lat/longs that are missing in the
+  data.  The lookup table has lat/longs supplied via email by Lynda.
+- provide spatial context (in the form of `Catchement` and `ZoneName`)
+  by joining these data to sub-catchment spatial data.
+- pivot wider so that `Parameters` are in new fields
+- rename parameters so that they are easier to work with
+- reorder the spatial data according to Catchment number
+
+Additional problems that are no longer an issue:
+
+  - there is at least one instance where `Source of discharge` differs
+    for the same `Site`, `Fin Year`, `Year ref`, Lat/Long,
+    `Organisation` - how is this possible.  I am going to remove the
+    "Source of discharge" field as this inconsistency is problematic.
+  - `Financial year end` and `Year ref.` are not consistent with
+    `Financial year end` - see example rows 282:285 of `Primary Point
+    Source Dataset_22.xlsx`.  I am going to remove `Financial year
+    end`
+
+```{r load data PRIMARY, results='markdown', eval=FALSE}
+```
+:::: panel-tabset
+
+### Design
+
+```{r design PRIMARY, results='markdown', eval=FALSE}
+```
+![Broad spatio-temporal design of the observed water quality data.  Solid dots indicate the presence of data.](../output/figures/design_primary.png){#fig-primary-design}
+
+### Spatial
+
+```{r process data PRIMARY, results='markdown', eval=FALSE}
+```
+```{r process data PRIMARY map, results='markdown', eval=FALSE}
+```
+
+![Spatial distribution of primary point sampling locations](../output/figures/map_primary.png){#fig-primary-spatial}
+
+	
+### Data glimpse
+
+```{r process primary glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/primary.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+
+::::
+## Estimated resident population (ERP) and gross regional product (GRP) 
+
+Processing steps:
+
+- rename parameters so that they are easier to work with
+
+These data do not have any spatial context, and thus will be applied
+at the whole of harbour level.
+
+```{r process data ERP, results='markdown', eval=FALSE}
+```
+
+```{r process erp glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/erp.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+
+## Catchment ERP
+
+Questions for Lynda:
+
+1. Should `MWA` be `Central Harbour` or `West Arm`, should they be
+   combined or should they be repeated so that the `ERP` and `Pop`
+   values effect both `West Arm` and `Central Harbour` water quality
+   values
+2. There are numerous apparent '-' in the excel sheet.  Some of these
+   (e.g. H6 are actually a '-'). Others, are exported as zero (0)
+   because they are right justified (e.g, D6-H6) and therefore
+   considered a negative rather than a nulll.  Should they be 0 or -?
+3. This results in 0 values for the population columns
+4. `Darwin CBD` is listed as `East Arm`, to be consistent, shouldn't
+   this be `Central Harbour`
+
+Processing steps:
+
+- remove the row sums
+- replace `-` characters with NA
+- ensure that all variables that begin with a four digit year are considered numeric
+- pivot longer so that the main predictors are in a single column
+- remove any rows with Value of NA
+- separete the column into Year and Predictor
+- pivot wider according to Predictor
+- rename parameters so that they are easier to work with
+
+```{r process data catchmentERP, results='markdown', eval=FALSE}
+```
+
+:::: panel-tabset
+
+### Design
+
+```{r design catchmentERP, results='markdown', eval=FALSE}
+```
+![Broad spatio-temporal design of the observed catchment ERP data.  Solid dots indicate the presence of data.](../output/figures/design_catchment_erp.png){#fig-catchmentERP-design}
+
+### Data glimpse
+
+```{r process catchment_erp glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/catchment_erp.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+
+::::
+
+## Fire frequency
+
+Data issues:
+
+- There are two columns called "11-15 (WA)".  As a result, when
+    imported, numbers are appended. Based on the naming patterns of
+    the other columns, it is clear that the second of these "11-15
+    (WA)" columns should have been "11-15 (SD)". Fix this up 
+- There is also some inconsistency in the format of the column
+    names.  Most of them are of the format "YR1_YR2 (STAT)", however,
+    the final few columns are of the format "YR1_YR2 STAT" (that is,
+    no brackets) - fix this.
+
+Processing steps:
+
+- rename the errant columns
+- remove the Overall summation row
+- pivot the table longer such that each year is a separate row
+- the input data represent the weighted averages and standard
+  deviations over 5 year windows.  For these data to be useful in an
+  statistical analysis, we need to express this time range as a single
+  year.  I will take the last year of the range of years as the focal
+  Year.  The logic here is that the fire frequency has been
+  experienced over that 5 year period.
+- pivot wider to express both weighted average and standard deviation
+  versions as separate predictors
+
+```{r process data fire frequency, results='markdown', eval=FALSE}
+```
+
+::::: panel-tabset
+
+### Design
+```{r design fire freq, results='markdown', eval=FALSE}
+```
+
+![Broad spatio-temporal design of the observed fire frequency data.  Solid dots indicate the presence of data.](../output/figures/design_fire_freq.png){#fig-firefreq-design}
+
+### Data glimpse
+
+```{r process fire_freq glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/fire_freq.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+
+:::::
+
+## Fire areas
+
+:::: panel-tabset
+
+### Areas
+
+Processing steps:
+
+- exclude the "Overall" row from the data
+- pivot the table longer such that each year is a separate row
+- apply a lookup to ensure consistent (standardised) Catchment naming
+- add spatial context (`ZoneName`)
+- ensure that year is a numeric variable
+
+```{r process data fire areas, results='markdown', eval=FALSE}
+```
+### Percentages
+
+Processing steps:
+
+- exclude the "Whole catchment area" row from the data
+- pivot the table longer such that each year is a separate row
+- perform some direct replacements to ensure consistent (standardised)
+  Catchment naming
+- add spatial context (`ZoneName`)
+- ensure that year is a numeric variable
+```{r process data fire areas percentage, results='markdown', eval=FALSE}
+```
+	
+### Combined
+```{r process data fire areas combined, results='markdown', eval=FALSE}
+```
+
+::::: panel-tabset
+
+### Design
+```{r design fire areas, results='markdown', eval=FALSE}
+```
+
+![](../output/figures/design_fire_areas.png)
+
+### Data glimpse
+
+```{r process fire_areas glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/fire_areas.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+
+:::::
+
+::::
+
+## Sea level rise
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename the columns for easier use according to a lookup
+- remove the `Financial year` field
+
+```{r process data sea_level_fin, results='markdown', eval=FALSE}
+```
+```{r process sea_level_fin glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/sea_level_fin.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Temperature/Rainfall/Anomaly
+
+:::: panel-tabset
+
+### Annual rainfall (fin year)
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename the columns for easier use according to a lookup
+- remove the `Financial year` field
+
+```{r process data rainfall_fin, results='markdown', eval=FALSE}
+```
+```{r process rainfall_fin glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/rainfall_fin.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+### Rainfall anomaly
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename the columns for easier use according to a lookup
+- remove the `Financial year` field
+
+```{r process data rainfall_anom, results='markdown', eval=FALSE}
+```
+```{r process rainfall_anom glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/rainfall_anom.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+### Air temperature
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename `Date` to `Year`
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+```{r process data temp, results='markdown', eval=FALSE}
+```
+```{r process temp glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/temp.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+### Air temperature anomaly
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+```{r process data temp_anom, results='markdown', eval=FALSE}
+```
+```{r process temp_anom glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/temp_anom.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+ 
+::::
+
+
+
+## Southern Oscillation Index (SOI)
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename the columns for easier use according to a lookup
+- reformat `Year` into a standard format
+
+```{r process data SOI_fin, results='markdown', eval=FALSE}
+```
+```{r process SOI_fin glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/SOI_fin.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Sea Surface Temperature (SST) anomaly
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+```{r process data SST_anom, results='markdown', eval=FALSE}
+```
+```{r process SST_anom glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/SST_anom.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Building activity
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+```{r process data build, results='markdown', eval=FALSE}
+```
+```{r process build glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/build.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+## Shipping activity
+
+There is no spatial component to these data.
+
+Processing steps:
+
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+```{r process data ship, results='markdown', eval=FALSE}
+```
+```{r process ship glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/ship.RData")) %>%
+ knitr::kable(escape = FALSE)
+```
+
+
+## Combine all data
+
+In combining together the responses/stresses along with the pressures,
+it is important to recognise that they are collected on different
+spatial and temporal scales.  Hence, to combine all the sources
+together, we need to do so via common spatial and temporal scales.
+
+For temporal scales, it is simple enough to base this on the financial
+year since most of the data are already expressed this way, or else
+the conversions are simple enough.  However, the spatial scales are
+more difficult, particularly considering that the water quality data
+(stresses) are collected in water and the pressures are predominantly
+collected terrestrially. The only real way to address this is to be
+able to associate each of the _Sub-catchments_ to a single harbour
+_Zone_.
+
+Consequently, all analyses will be conducted on the Zone/Year scale.
+There are many instances (both stresses and pressures) in which there
+are multiple observations collected per Zone/Year. As a result, when
+the multiple sources are combined together, the number of data set
+rows will increase dramatically.  For example, a given water quality
+observation might appear multiple times, once for each pressure
+observation at that Zone/Year scale.
+
+This duplication is not necessarily an issue, however, we need to be
+mindful of it so as to prevent it from artificially over or under
+weighting some effects.  To help with this, I will add a unique record
+identifier to the water quality components.
+
+The alternative is to aggregate all data to the Zone/Year level such
+that there are no more than one observation (per stress and
+predictor) per Zone/Year. Although this would simplify things, it has
+the potential to loose vast quantities of information.
+
+
+```{r process data Combine, results='markdown', eval=FALSE}
+```
+
+```{r process data Combine glimpse, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/data.RData")) %>%
+ head() %>% 
+ knitr::kable(escape = FALSE)
+```
+:::
+ 
+
+# Exploratory data analyses (Routine sites)
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+
+## Responses
+
+<details><summary>View codes</summary>
+```{r EDA load data, results='markdown', eval=FALSE}
+```
+```{r EDA function, results='markdown', eval=FALSE}
+```
+```{r EDA Routine, results='markdown', eval=FALSE}
+```
+```{r EDA Routine save, results='markdown', eval=FALSE}
+```
+</details>
+
+
+:::: panel-tabset
+
+```{r EDA responses routine, results='asis', eval=TRUE, echo=FALSE}
+for (i in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == i) %>%
+        pull(TableLabel)
+    cap <- paste0("Temporal trends in ",lab,
+                  " within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("![",cap,"](../output/figures/EDA_routine_",i,".png){#fig-EDA-routine-",i,"} \n\n"))}
+```
+
+::::
+
+## Dual time series plots
+
+Note, in the following plots, pressures are expressed in Zone
+aggregations rather than Catchments so that they can be aligned with
+the responses (stressors).  Also notes that the temporal range of
+pressures is truncated to match that of the maximum temporal domain of
+the stressors data.
+
+:::: panel-tabset
+
+```{r EDA routine dual, results='asis', eval=TRUE, echo=FALSE}
+for (j in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == j) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("\n::::: panel-tabset\n\n"))
+    for (i in 1:nrow(FOCAL_PRESSURES)) {
+        MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+        MEASURE_lab <- units_lookup %>%
+            filter(Measure == MEASURE) %>%
+            pull(TableLabel) %>% 
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", MEASURE_lab, "\n"))
+
+    cap <- paste0("Temporal trends in ",lab,
+                  " (orange) and ", MEASURE_lab, " (purple) within each of the Zones for routine sampling sites. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+        cat(paste0("![",cap,"](../output/figures/EDA_dual_plot.routine__",j,"__",MEASURE,".png){#fig-EDA-routine-",j,".",MEASURE,"} \n\n"))
+    }
+    cat(paste0("\n:::::\n\n"))
+}
+
+```
+
+::::
+
+
+:::
+
+# Exploratory data analyses (Discrete samples)
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+
+## Responses
+
+<details><summary>View codes</summary>
+```{r EDA load data, results='markdown', eval=FALSE}
+```
+```{r EDA function, results='markdown', eval=FALSE}
+```
+```{r EDA, results='markdown', eval=FALSE}
+```
+```{r EDA save, results='markdown', eval=FALSE}
+```
+</details>
+
+:::: panel-tabset
+
+```{r EDA responses, results='asis', eval=TRUE, echo=FALSE}
+for (i in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == i) %>%
+        pull(TableLabel)
+    cap <- paste0("Temporal trends in ",lab,
+                  " within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("![",cap,"](../output/figures/EDA_",i,".png){#fig-EDA-",i,"} \n\n"))}
+```
+
+::::
+
+## Pressures
+
+<details><summary>View codes</summary>
+```{r EDA pressures function, results='markdown', eval=FALSE}
+```
+```{r EDA pressures, results='markdown', eval=FALSE}
+```
+</details>
+
+:::: panel-tabset
+
+```{r EDA pressures tab, results='asis', eval=TRUE, echo=FALSE}
+for (i in FOCAL_PRESSURES$Measure) {
+    lab <- units_lookup %>%
+        filter(Measure == i) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cap <- paste0("Temporal trends in ",lab,
+                  " within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("![",cap,"](../output/figures/EDA_pressures_",i,".png){#fig-EDA-",i,"} \n\n"))}
+```
+
+::::
+
+## Dual time series plots
+
+Note, in the following plots, pressures are expressed in Zone
+aggregations rather than Catchments so that they can be aligned with
+the responses (stressors).  Also notes that the temporal range of
+pressures is truncated to match that of the maximum temporal domain of
+the stressors data.
+
+:::: panel-tabset
+
+```{r EDA dual, results='asis', eval=TRUE, echo=FALSE}
+for (j in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == j) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("\n::::: panel-tabset\n\n"))
+    for (i in 1:nrow(FOCAL_PRESSURES)) {
+        MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+        MEASURE_lab <- units_lookup %>%
+            filter(Measure == MEASURE) %>%
+            pull(TableLabel) %>% 
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", MEASURE_lab, "\n"))
+
+    cap <- paste0("Temporal trends in ",lab,
+                  " (orange) and ", MEASURE_lab, " (purple) within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+        cat(paste0("![",cap,"](../output/figures/EDA_dual_plot__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+    }
+    cat(paste0("\n:::::\n\n"))
+}
+
+```
+
+::::
+
+## Associations
+
+:::: panel-tabset
+
+```{r EDA associations, results='asis', eval=TRUE, echo=FALSE}
+for (j in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == j) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("\n::::: panel-tabset\n\n"))
+    for (i in 1:nrow(FOCAL_PRESSURES)) {
+        MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+        MEASURE_lab <- units_lookup %>%
+            filter(Measure == MEASURE) %>%
+            pull(TableLabel) %>% 
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", MEASURE_lab, "\n"))
+
+        cat(paste0("\n:::::: panel-tabset\n\n"))
+        cat(paste0("\n#### Simple trends\n"))
+    cap <- paste0("Temporal trends in ",lab,
+                  " (orange) and ", MEASURE_lab, " (purple) within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+        cat(paste0("![",cap,"](../output/figures/gamPlots__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### Partial plots\n"))
+        cat(paste0("![",cap,"](../output/figures/partial__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### DHARMa residual uniformity\n"))
+        cat(paste0("![",cap,"](../output/figures/DHARMa_unif__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### DHARMa residual quantiles\n"))
+        cat(paste0("![",cap,"](../output/figures/DHARMa_quant__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+
+        cat(paste0("\n#### Summary Tables\n"))
+        data.EDA.mod.sum <- readRDS(file = paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",
+                                                  j,"__",MEASURE,".RData"))
+        R2 <- data.EDA.mod.sum %>%
+            mutate(R2c = map(.x = R2, .f = ~ .x[3,1])) %>%
+            mutate(R2m = map(.x = R2, .f = ~ .x[3,2])) %>%
+            dplyr::select(ZoneName, R2c, R2m) %>%
+            unnest(c(R2c, R2m)) %>%
+            pivot_longer(cols = c(R2c, R2m),
+                         names_to = "term") %>%
+            mutate(effect = ifelse(term == 'R2c','fixed','Total')) %>%
+            mutate(group = "") %>%
+            mutate(Parameter = sprintf("% 0.3f",value)) %>%
+            dplyr::select(-value)
+        Emmeans <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+            unnest(Emmeans) %>%
+            group_by(ZoneName) %>%
+            summarise(Emmeans = list(response), .groups = "drop")
+
+        EM <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+            unnest(Emmeans) %>%
+            {split(.$response, .$ZoneName)}
+        
+        data.EDA.mod.sum %>% dplyr::select(ZoneName, Params2) %>% unnest(Params2) -> a
+
+        ## a %>%
+        ##     kable() %>%
+        ##     print()
+        ## ##library(flextable)
+        ## library(gt)
+
+        ## ##R2 %>% gt() %>% as_raw_html() %>% print()
+        ## ## print(gt(R2))
+        ## ## cat('\nhi\n')
+        
+        ## library(gtExtras)
+        as_tibble(a) %>%
+            mutate(term = str_replace(term, 'sd__', "")) %>%
+            ## mutate(Parameter = paste(insight::format_value(estimate,),
+            ##                           insight::format_ci(conf.low, conf.high, ci = NULL))) %>%
+            mutate(Parameter = sprintf("% 0.3f\n[% 2.3f,% 2.3f]", estimate,conf.low, conf.high)) %>%
+            mutate(Parameter = str_replace_all(Parameter, "NA|NaN|Inf","")) %>%
+            mutate(Parameter = replace_na(Parameter, "")) %>%
+            ## mutate(Parameter = str_glue("{format(estimate,justify = 'left', digits = 3, scientific = FALSE)}")) %>%
+            dplyr::select(-std.error, -statistic, -p.value, -estimate, -conf.low, -conf.high) %>% 
+            full_join(R2) %>%
+            ## filter(!Stat %in% c('z', 'df_error', 'p', 'SE', 'CI')) %>%
+            filter(!(term == "(Intercept)" & effect == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+            dplyr::select(-component) %>%
+            mutate(term = paste0(group,term)) %>%
+            ## arrange(ZoneName, effect, term) %>%
+            mutate(term = str_replace(term, "WQ_SITE\\(Intercept\\)", "Site (SD)")) %>%
+            dplyr::select(-group) %>%
+            ## pivot_wider(id_cols = everything(),
+            ##             names_from = Stat,
+            ##             values_from = value)
+                                        #unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat,) %>%
+            unite(col = 'Name', effect, term, sep = "__",na.rm = FALSE) %>%
+                                        #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+            ## unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+            mutate(Name = str_replace_all(Name, "NA","")) %>% 
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)1", "DV (Linear)")) %>%
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)2", "DV (Quadratic)")) %>%
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)3", "DV (Cubic)")) %>%
+            mutate(Name = str_replace(Name, "fixed", "Fixed")) %>%
+            mutate(Name = str_replace(Name, "ran_pars", "Random")) %>%
+            arrange(Name) %>%
+            pivot_wider(id_cols = everything(),
+                        names_from = Name,
+                        values_from = Parameter) %>%
+            arrange(ZoneName) %>%
+            rename(Zone = ZoneName) -> b
+ 
+        library(kableExtra)
+        ##library(webshot)
+        b %>%
+            full_join(Emmeans %>% rename(Zone = ZoneName)) %>%
+            dplyr::rename(Total__Trend = Emmeans) %>%
+            dplyr::mutate(Total__Trend = "") %>% 
+                                        #dplyr::select(-Trend) %>%
+            mutate(across(matches("DV|Year|Random"), ~replace_na(.x, " "))) %>%
+            kable(escape = FALSE) %>%
+            column_spec(ncol(b)+1, image = spec_plot(EM, same_lim = FALSE)) %>%
+            header_separate(sep="__") %>%
+            kable_classic(full_width = T) %>%
+            kable_styling(bootstrap_options = "striped", font_size = 12) %>%
+                                        #add_header_above(c(" " = 1, "Fixed" = 6, "Random" = 1, "Total" = 2)) %>%
+            ##as_image(file = "../output/figures/test.png")
+            ##save_kable("../output/figures/test.png")
+            ## knitr::knit_print()
+        print()
+        ##     gt() %>%
+        ##     gt::tab_spanner_delim(delim = "__", columns = everything(), split = "last") %>%
+        ##     sub_missing(everything(), everything(), missing_text = "") %>%
+        ##     gtExtras::gt_plt_sparkline(Trend, same_limit = FALSE) %>%
+        ##      as_raw_html() %>% print()
+
+if (1==2) {
+
+        
+
+## library(gtExtras)
+##         dplyr::tibble(
+##                                       mean = c(12, 10), ci1 = c(8, 5), ci2 = c(16, 15),
+##                                       ci_plot = c(12, 10)
+##                                   ) %>%
+##             gt::gt() %>%
+##             gt_plt_conf_int(
+##                 ci_plot, c(ci1, ci2),
+##                 palette = c("red", "lightgrey", "black", "red")
+##             ) %>%
+##             cols_hide(c(mean, ci1, ci2))
+
+        as_tibble(a) %>%
+            mutate(term = str_replace(term, 'sd__', "")) %>%
+            dplyr::select(-std.error, -statistic, -p.value) %>% 
+            filter(!(term == "(Intercept)" & effect == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+            dplyr::select(-component) %>%
+            mutate(term = paste0(group,term)) %>%
+            ## arrange(ZoneName, effect, term) %>%
+            mutate(term = str_replace(term, "WQ_SITE\\(Intercept\\)", "Site (SD)")) %>%
+            dplyr::select(-group) %>%
+            ## unite(col = 'Name', effect, term, sep = "__",na.rm = FALSE) %>%
+                                        #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+            ## unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+            ## mutate(Name = str_replace_all(Name, "NA","")) %>% 
+            ## mutate(Name = str_replace(Name, "poly\\(DV, 3\\)1", "DV (Linear)")) %>%
+            ## mutate(Name = str_replace(Name, "poly\\(DV, 3\\)2", "DV (Quadratic)")) %>%
+            ## mutate(Name = str_replace(Name, "poly\\(DV, 3\\)3", "DV (Cubic)")) %>%
+            ## mutate(Name = str_replace(Name, "fixed", "Fixed")) %>%
+            ## mutate(Name = str_replace(Name, "ran_pars", "Random")) %>%
+            ## arrange(Name) %>%
+            ## pivot_longer(cols = c(estimate, conf.low, conf.high),
+            ##              names_to = 'Stat',
+            ##              values_to = 'Values') %>%
+            ## unite(Name, Name, Stat, sep='__')
+            ## pivot_wider(id_cols = everything(),
+            ##             names_from = Name,
+            ##             values_from = Parameter) %>%
+            arrange(ZoneName) %>%
+            ## rename(Zone = ZoneName) -> b
+
+            ## full_join(R2) %>%
+    filter(ZoneName != "West Arm") %>%
+    gt(groupname_col = "ZoneName", rowname_col = "effect") %>%
+    ## gt() %>%
+    gt_plt_conf_int(estimate, c(conf.low, conf.high),
+                    ref_line = 0) %>%
+    cols_hide(c(conf.low, conf.high))
+        
+            as.data.frame %>% head()
+
+##======================
+}
+
+
+
+
+
+
+
+
+
+
+
+        
+  ##       data.EDA.mod.sum <- readRDS(file = paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",j,"__",MEASURE,".RData"))
+  ##       parameters::compare_models(data.EDA.mod$Mod,
+  ##                                  column_names = data.EDA.mod$ZoneName,
+  ##                                  effects = 'all',
+  ##                                  exponentiate = FALSE) -> a
+
+  ##       R2 <- data.EDA.mod %>% mutate(R2c = map(.x = R2, .f = ~ .x[3,1])) %>% unnest(R2c) %>% dplyr::select(ZoneName, R2c) %>% mutate(Effects = 'fixed') %>% mutate(Group = "", Parameter = "DV", Stat = "R2c") %>% rename(value = R2c)
+        
+
+        
+  ##       as_tibble(a) %>%
+  ##           pivot_longer(cols = c(-Parameter, -Component, -Effects, -Group)) %>% 
+  ##           separate(name, into = c('Stat', 'ZoneName'), sep = '\\.') %>%
+  ##                                       #mutate(Group = ifelse(Group =="", "A", Group)) %>%
+  ##           full_join(R2) %>%
+  ##           filter(!Stat %in% c('z', 'df_error', 'p', 'SE', 'CI')) %>%
+  ##           filter(!(Parameter == "(Intercept)" & Effects == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+  ##           dplyr::select(-Component) %>%
+  ##           mutate(Parameter = paste0(Group,Parameter)) %>%
+  ##           dplyr::select(-Group) %>%
+  ##           ## pivot_wider(id_cols = everything(),
+  ##           ##             names_from = Stat,
+  ##           ##             values_from = value)
+  ##                                       #unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat,) %>%
+  ##           unite(col = 'Name', Effects, Parameter, sep = "__",na.rm = FALSE) %>%
+  ##                                       #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+  ##           unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+            
+  ##           pivot_wider(id_cols = everything(),
+  ##                       names_from = Parameter,
+  ##                       values_from = value) -> b
+
+  ##       b %>% gt() %>%
+  ## gt::tab_spanner_delim(delim = "__", columns = everything(), split = "last") 
+        
+  ##       as_tibble(a) %>%
+  ##           pivot_longer(cols = c(-Parameter, -Component, -Effects, -Group)) %>%
+  ##           separate(name, into = c('Stat', 'ZoneName'), sep = '\\.') %>%
+  ##           ## dplyr::select(-Component, -Effects, -Group) %>%
+  ##          unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat) %>% 
+  ##           pivot_wider(id_cols = everything(),
+  ##                       names_from = Parameter,
+  ##                       values_from = value) %>% gt()
+        cat(paste0("\n::::::\n\n"))
+    }
+    cat(paste0("\n:::::\n\n"))
+
+
+
+
+
+        
+    
+}
+
+
+
+
+```
+<!--
+**LOOK INTO PROBABILITY OF DIRECTION**
+
+**easy-stats** packages
+
+            ## parameters::compare_models(data.EDA.mod$Mod,
+            ##                            column_names = data.EDA.mod$ZoneName)
+            ## parameters::compare_parameters(data.EDA.mod$Mod,
+            ##                            column_names = data.EDA.mod$ZoneName)
+-->
+
+::::
+
+:::
+
+# Exploratory data analyses (spatio-temporal aggregation)

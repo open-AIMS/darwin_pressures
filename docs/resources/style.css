@@ -14,7 +14,8 @@ body {
 body .page-columns {
     display: grid;
     gap: 0;
-    grid-template-columns: [screen-start] 1.5em [screen-start-inset] 5fr [page-start page-start-inset] 35px [body-start-outset] 35px [body-start] 1.5em [body-content-start] minmax(500px, calc(760px - 0em)) [body-content-end] 1.5em [body-end] 35px [body-end-outset] minmax(75px, 145px) [page-end-inset] 35px [page-end] 5fr [screen-end-inset] 1.5em [screen-end];
+    /* grid-template-columns: [screen-start] 1.5em [screen-start-inset] 5fr [page-start page-start-inset] 35px [body-start-outset] 35px [body-start] 1.5em [body-content-start] minmax(500px, calc(1200px - 0em)) [body-content-end] 1.5em [body-end] 35px [body-end-outset] minmax(75px, 145px) [page-end-inset] 35px [page-end] 5fr [screen-end-inset] 1.5em [screen-end]; */
+    grid-template-columns: [screen-start] 0em [screen-start-inset] 1fr [page-start page-start-inset] 0px [body-start-outset] 0px [body-start] 0em [body-content-start] minmax(500px, calc(1200px - 0em)) [body-content-end] 0em [body-end] 0px [body-end-outset] minmax(75px, 145px) [page-end-inset] 0px [page-end] 5fr [screen-end-inset] 0em [screen-end];
 }
 
 main {
@@ -22,13 +23,14 @@ main {
     padding-right: 25px !important;
     background-color: white;
     box-shadow: 0px 3px 20px #333;
-    width:760px;
+    /* width:760px; */
+    width:1200px;
     text-align: justify;
     margin-top:0em;
 }
 
 .quarto-title {
-    padding-top:95px;
+    padding-top:280px;
     padding-left:25px;
 }
 .quarto-title-meta {
@@ -55,10 +57,13 @@ section:not(.unnumbered) > h2:before {
 header {
     position: relative;
     left: -25px;
-    width: 760px;
-    height: 95px;
+    /* width: 760px; */
+    width: 1200px;
+    /* height: 95px; */
+    height: 277px;
     /* background: url(ECM_1781874_v1_2022_Letterhead_Header.png) no-repeat; */
-    background: url(banner-top1.png) no-repeat;
+    /* background: url(banner-top1.png) no-repeat; */
+    background: url(banner-top2.png) no-repeat;
     display:inline-block;
 }
 
@@ -193,7 +198,8 @@ table>caption {
 
 .table{
     display:block;
-    max-width:760px;
+    /* max-width:760px; */
+    max-width:1200;
     max-height:30em;
     overflow:auto;
 }
@@ -223,4 +229,11 @@ table>caption {
 
 pre>code {
     /* height: 200px; */
+}
+
+.quarto-figure>figure {
+    width: 100%;
+    margin-bottom: 0;
+    justify-content: center;
+    display: grid;
 }

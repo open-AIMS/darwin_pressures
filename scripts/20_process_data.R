@@ -201,7 +201,7 @@ FOCAL_RESPS <- var_lookup %>%
     wq.spatial <- wq %>%
         filter(!is.na(Latitude), !is.na(Longitude),
                Latitude != 0, Longitude !=0) %>%
-        dplyr::select(Longitude, Latitude, Source, Year, Value) %>%
+        dplyr::select(Longitude, Latitude, Source, Year, Value, Measure) %>%
         distinct() %>% 
         sf::st_as_sf(coords = c('Longitude', 'Latitude'),
                      crs = st_crs(4326))
@@ -245,14 +245,21 @@ FOCAL_RESPS <- var_lookup %>%
         filename = paste0(FIGS_PATH, "/design_wq_2016.png"),
         p,
         width = 12,
-        height = 10,
+        height = 12,
         dpi = 72
     )
     ## ----end
     ## ---- process data 2016_2022 map
     ggplot() +
         geom_sf(data = spatial) +
-        geom_sf(data = wq.spatial %>% filter(Year == 2018, !is.na(Value)), aes(colour = Source)) +
+        geom_sf(data = wq.spatial %>% filter(Source == "Discrete"),
+                    ## filter(Year == 2018, !is.na(Value)),
+                    ## filter(Year == 2018) %>%
+                    ## group_by(geometry, Source) %>%
+                    ## summarise(Value = mean(Value)) %>%
+                    ## filter(!is.na(Value)),
+                aes(colour = Source)) +
+        facet_wrap(~Year) +
         theme_bw() +
         theme(legend.position = c(0.01, 0.01),
               legend.justification = c(0,0)) ->
@@ -260,7 +267,161 @@ FOCAL_RESPS <- var_lookup %>%
     p
     ggsave(filename = paste0(FIGS_PATH, "/map_wq__2016_2022.png"),
            width = 7,
+           height = 9,
+           dpi = 72)
+
+    
+    ggplot() +
+        geom_sf(data = spatial) +
+        geom_sf(data = wq.spatial,
+                aes(colour = Source)) +
+        theme_bw() +
+        theme(legend.position = c(0.01, 0.01),
+              legend.justification = c(0,0)) ->
+        p
+    p
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__2016_2022_all.png"),
+           width = 7,
            height = 8,
+           dpi = 72)
+    ## ----end
+
+    ## ---- process data 2018 alterations
+    readRDS(file = paste0(DATA_PATH, "primary/wq_2018.RData")) %>% 
+        mutate(Latitude1 = ifelse(Latitude >100, Longitude, Latitude),
+               Longitude = ifelse(Longitude < 0, Latitude, Longitude),
+               Latitude = Latitude1) %>%
+        dplyr::select(-Latitude1) %>%
+        mutate(Source = ifelse(Source == "Discrete" & SAMPTYPE == "CFM", "CFM", Source)) %>%
+        dplyr::select(-Region) %>%
+        mutate(Date = as.Date(Date, format = "%d/%m/%Y"),
+               Year = floor(lubridate::quarter(Date, fiscal_start = 7, with_year = TRUE))) %>%
+        pivot_longer(cols = any_of(FOCAL_RESPS %>% pull(Var)),
+                     names_to = 'Var',
+                     values_to = 'Value') %>%
+        left_join(FOCAL_RESPS %>%
+                  dplyr::select(Var, Measure)) %>%
+        left_join(spatial_lookup) %>%
+        filter(!is.na(Measure),
+               !is.na(Latitude)) %>%
+        dplyr::select(ZoneName, Longitude, Latitude,
+                      Date, Year, Source, Measure, Value) ->
+        wq
+    saveRDS(wq, file = paste0(DATA_PATH, 'processed/wq_2018.RData'))
+    wq.spatial <- wq %>%
+        filter(!is.na(Latitude), !is.na(Longitude),
+               Latitude != 0, Longitude !=0) %>%
+        dplyr::select(Longitude, Latitude, Source, Year, Value, Measure) %>%
+        distinct() %>% 
+        sf::st_as_sf(coords = c('Longitude', 'Latitude'),
+                     crs = st_crs(4326))
+    saveRDS(wq.spatial, file = paste0(DATA_PATH, 'processed/wq.spatial_2018.RData'))
+    ## ----end
+    ## ---- process data 2018 alterations design
+    wq %>%
+        filter(Source == "Discrete") %>%
+        mutate(Site = interaction(Longitude, Latitude)) %>%
+        dplyr::select(ZoneName, Site, Year, Measure) %>%
+        distinct() ->
+        wq.design
+    units_lookup %>%
+        ## dplyr::select(Measure, FigureLabel) ->
+        dplyr::select(Measure, TableLabel) ->
+        ## deframe() %>%
+        ## list() ->
+        lookup
+    wq.design %>%
+        left_join(lookup) %>%
+        ## mutate(Measure = FigureLabel) %>%
+        mutate(Measure = TableLabel) %>%
+        ggplot() +
+        geom_point(aes(y = Site, x = Year, colour = Measure), show.legend = FALSE) +
+        facet_grid(paste0(ZoneName) ~ Measure,
+                   space = "free", scales = "free_y",
+                   labeller = labeller(Measure = label_wrap_gen(20))
+                   ) +
+        theme_bw(14) +
+        theme(
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            legend.text.align = 0,
+            strip.text.y = element_text(angle = 0),
+            panel.spacing.x = unit("0.5", "cm")
+        ) ->
+        p
+    
+    ggsave(
+        filename = paste0(FIGS_PATH, "/design_wq_2018.png"),
+        p,
+        width = 12,
+        height = 12,
+        dpi = 72
+    )
+    ## ----end
+    ## ---- process data 2018 alterations map
+    ggplot() +
+        geom_sf(data = spatial) +
+        geom_sf(data = wq.spatial %>% filter(Source == "Discrete"),
+                    ## filter(Year == 2018, !is.na(Value)),
+                    ## filter(Year == 2018) %>%
+                    ## group_by(geometry, Source) %>%
+                    ## summarise(Value = mean(Value)) %>%
+                    ## filter(!is.na(Value)),
+                aes(colour = Source)) +
+        facet_wrap(~Year) +
+        theme_bw() +
+        theme(legend.position = c(0.01, 0.01),
+              legend.justification = c(0,0)) ->
+        p
+    p
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__2018.png"),
+           width = 7,
+           height = 5,
+           dpi = 72)
+
+    
+    ggplot() +
+        geom_sf(data = spatial) +
+        geom_sf(data = wq.spatial,
+                aes(colour = Source)) +
+        theme_bw() +
+        theme(legend.position = c(0.01, 0.01),
+              legend.justification = c(0,0)) ->
+        p
+    p
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__2018_all.png"),
+           width = 7,
+           height = 8,
+           dpi = 72)
+    ## ----end
+
+    ## ---- process data Routine sites
+    routine_sites <- readRDS(file = paste0(DATA_PATH, "primary/wq_routine_sites.RData"))
+    routine_sites <- routine_sites %>%
+        dplyr::select(Site, Latitude, Longitude) %>%
+        mutate(Type = "Routine")
+    saveRDS(routine_sites, file = paste0(DATA_PATH, "processed/wq_routine_sites.RData"))
+    ## ----end
+    ## ---- process data Routine sites map
+    routine_sites.spatial <- routine_sites %>%
+        st_as_sf(coords = c("Longitude", "Latitude"),
+                 crs = st_crs(4326))
+    ggplot() +
+        geom_sf(data = spatial, aes(fill = Zone_Name)) +
+        geom_sf(data = routine_sites.spatial) +
+        geom_sf_label_repel(data = routine_sites.spatial, aes(label = Site),
+                            force = 50) +
+        scale_fill_discrete('') + 
+        theme_bw() +
+        theme(legend.position = c(0.01, 0.01),
+              legend.justification = c(0,0),
+              axis.title = element_blank()) ->
+        p
+    p
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__routine_sites.png"),
+           width = 7,
+           height = 9,
            dpi = 72)
     ## ----end
 
@@ -273,72 +434,187 @@ FOCAL_RESPS <- var_lookup %>%
                     values_fn = mean,
                     names_from = 'Measure',
                     values_from = 'Value') %>%
-        mutate(WQ_ID = 1:n()) ->
+        mutate(WQ_ID = 1:n(),
+               WQ_SITE = factor(paste(Longitude, Latitude))) %>%
+        full_join(routine_sites) %>%
+        mutate(Type = ifelse(is.na(Type), 'Other', Type),
+               Type = ifelse(Type == "Routine" | Year < 2016, 'Routine', 'Other')) ->
         wq
 
     saveRDS(wq, file = paste0(DATA_PATH, 'processed/wq.RData'))
     ## ----end
-
-    ## ---- design data
-    fl <- wq %>% dplyr::select(ZoneName) %>% distinct %>%
-        crossing(`Year` = wq %>% pull(Year) %>% unique)
-    ## expand(Site, `Year ref.`)#, Parameter = c('TotalN', 'TotalP', 'TSS', 'VSS', 'Discharge'))
-    units_lookup %>%
-        dplyr::select(Measure, FigureLabel) %>%
-        deframe %>% list ->
-        lookup
-
+    
+    ## ---- process data combine design Routine
     wq %>%
+        filter(Type == "Routine") %>%
+        mutate(Site = interaction(Longitude, Latitude)) %>%
+        pivot_longer(cols = c(Chla, Turbidity, DO, PO4, NH3, NOx),
+                     names_to = "Measure",
+                     values_to = "Value") %>%
+        dplyr::select(ZoneName, Site, Year, Measure) %>%
+        distinct() ->
+        wq.design
+    units_lookup %>%
+        ## dplyr::select(Measure, FigureLabel) ->
+        dplyr::select(Measure, TableLabel) ->
+        ## deframe() %>%
+        ## list() ->
+        lookup
+    wq.design %>%
+        left_join(lookup) %>%
+        ## mutate(Measure = FigureLabel) %>%
+        mutate(Measure = TableLabel) %>%
         ggplot() +
-        geom_point(data = fl, aes(y = ZoneName, x = Year),
-                   position=position_nudge(x= 0.1),
-                   shape = 21, colour = 'grey80') +
-        geom_point(data = fl, aes(y = ZoneName, x = Year),
-                   position=position_nudge(x= -0.1),
-                   shape = 21, colour = 'grey80') +
-        geom_point(data = wq %>%
-                       filter(!is.na(PO4)),
-                   aes(y = ZoneName, x = Year,
-                       colour = lookup[[1]]["PO4"]),
-                   position=position_nudge(x= 0.1)) +
-        geom_point(data = wq %>%
-                       filter(!is.na(DO)),
-                   aes(y = ZoneName, x = Year,
-                       colour = lookup[[1]]["DO"]),
-                   position=position_nudge(x= -0.1)) +
-        geom_point(data = wq %>%
-                       filter(!is.na(Turbidity)),
-                   aes(y = ZoneName, x = Year,
-                       colour = lookup[[1]]["Turbidity"]),
-                   position=position_nudge(x= 0.1, y = -0.1)) +
-        geom_point(data = wq %>%
-                       filter(!is.na(Chla)),
-                   aes(y = ZoneName, x = Year,
-                       colour = lookup[[1]]["Chla"]),
-                   position=position_nudge(x= -0.1, y = -0.1)) +
-        geom_point(data = wq %>%
-                       filter(!is.na(NH3)),
-                   aes(y = ZoneName, x = Year,
-                       colour = lookup[[1]]["NH3"]),
-                   position=position_nudge(x= 0.1, y = 0.1)) +
-        geom_point(data = wq %>%
-                       filter(!is.na(NOx)),
-                   aes(y = ZoneName, x = Year,
-                       colour = lookup[[1]]["NOx"]),
-                   position=position_nudge(x= -0.1, y = 0.1)) +
-        facet_grid(ZoneName~., space = 'free', scales = 'free_y',
-                   labeller = label_wrap_gen(width = 10)) +
-    scale_colour_discrete('Measure', labels = scales::label_parse()) + 
-    theme_bw(14) +
-        theme(axis.title = element_blank(),
-              legend.text.align = 0) ->
+        geom_point(aes(y = Site, x = as.Date(paste0(Year,"-01-01")),
+                       colour = Measure), show.legend = FALSE) +
+        facet_grid(paste0(ZoneName) ~ Measure,
+                   space = "free", scales = "free_y",
+                   labeller = labeller(Measure = label_wrap_gen(20))
+                   ) +
+        theme_bw(14) +
+        theme(
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            legend.text.align = 0,
+            strip.text.y = element_text(angle = 0),
+            panel.spacing.x = unit("0.5", "cm")
+        ) ->
         p
     
-    ggsave(filename = paste0(FIGS_PATH, "/design_catchment_erp.png"),
-           width = 12,
-           height = 10,
+    ggsave(
+        filename = paste0(FIGS_PATH, "/design_wq_routine.png"),
+        p,
+        width = 15,
+        height = 12,
+        dpi = 72
+    )
+    ## ----end
+    
+    ## ---- process data combine design Discrete
+    wq %>%
+        filter(Source == "Discrete") %>%
+        mutate(Site = interaction(Longitude, Latitude)) %>%
+        pivot_longer(cols = c(Chla, Turbidity, DO, PO4, NH3, NOx),
+                     names_to = "Measure",
+                     values_to = "Value") %>%
+        dplyr::select(ZoneName, Site, Year, Measure) %>%
+        distinct() ->
+        wq.design
+    units_lookup %>%
+        ## dplyr::select(Measure, FigureLabel) ->
+        dplyr::select(Measure, TableLabel) ->
+        ## deframe() %>%
+        ## list() ->
+        lookup
+    wq.design %>%
+        left_join(lookup) %>%
+        ## mutate(Measure = FigureLabel) %>%
+        mutate(Measure = TableLabel) %>%
+        ggplot() +
+        geom_point(aes(y = Site, x = as.Date(paste0(Year,"-01-01")),
+                       colour = Measure), show.legend = FALSE) +
+        facet_grid(paste0(ZoneName) ~ Measure,
+                   space = "free", scales = "free_y",
+                   labeller = labeller(Measure = label_wrap_gen(20))
+                   ) +
+        theme_bw(14) +
+        theme(
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            legend.text.align = 0,
+            strip.text.y = element_text(angle = 0),
+            panel.spacing.x = unit("0.5", "cm")
+        ) ->
+        p
+    
+    ggsave(
+        filename = paste0(FIGS_PATH, "/design_wq.png"),
+        p,
+        width = 15,
+        height = 12,
+        dpi = 72
+    )
+    ## ----end
+
+    ## ---- process data combine map Routine
+    wq.spatial <- wq %>%
+        pivot_longer(cols = c(Chla, Turbidity, DO, PO4, NH3, NOx),
+                     names_to = "Measure",
+                     values_to = "Value") %>%
+        filter(!is.na(Latitude), !is.na(Longitude),
+               Latitude != 0, Longitude !=0) %>%
+        dplyr::select(Longitude, Latitude, Type, Year, Value, Measure) %>%
+        distinct() %>% 
+        sf::st_as_sf(coords = c('Longitude', 'Latitude'),
+                     crs = st_crs(4326))
+    saveRDS(wq.spatial, file = paste0(DATA_PATH, 'processed/wq.spatial_combine_routine.RData'))
+
+    ggplot() +
+        geom_sf(data = spatial) +
+        geom_sf(data = wq.spatial,
+                aes(colour = Type)) +
+        theme_bw() +
+        facet_wrap(~Year) +
+        theme(legend.position = c(0.99, 0.01),
+              legend.justification = c(1,0)) ->
+        p
+    p
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq_routine.png"),
+           width = 7,
+           height = 7,
            dpi = 72)
     ## ----end
+    
+    ## ---- process data combine map Discrete
+    wq.spatial <- wq %>%
+        pivot_longer(cols = c(Chla, Turbidity, DO, PO4, NH3, NOx),
+                     names_to = "Measure",
+                     values_to = "Value") %>%
+        filter(!is.na(Latitude), !is.na(Longitude),
+               Latitude != 0, Longitude !=0) %>%
+        dplyr::select(Longitude, Latitude, Source, Year, Value, Measure) %>%
+        distinct() %>% 
+        sf::st_as_sf(coords = c('Longitude', 'Latitude'),
+                     crs = st_crs(4326))
+    saveRDS(wq.spatial, file = paste0(DATA_PATH, 'processed/wq.spatial_combine.RData'))
+
+    ggplot() +
+        geom_sf(data = spatial) +
+        geom_sf(data = wq.spatial %>% filter(Source == "Discrete"),
+                    ## filter(Year == 2018, !is.na(Value)),
+                    ## filter(Year == 2018) %>%
+                    ## group_by(geometry, Source) %>%
+                    ## summarise(Value = mean(Value)) %>%
+                    ## filter(!is.na(Value)),
+                aes(colour = Source)) +
+        facet_wrap(~Year) +
+        theme_bw() +
+        theme(legend.position = c(0.01, 0.01),
+              legend.justification = c(0,0)) ->
+        p
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq.png"),
+           width = 7,
+           height = 7,
+           dpi = 72)
+
+    
+    ggplot() +
+        geom_sf(data = spatial) +
+        geom_sf(data = wq.spatial,
+                aes(colour = Source)) +
+        theme_bw() +
+        theme(legend.position = c(0.01, 0.01),
+              legend.justification = c(0,0)) ->
+        p
+    p
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq_all.png"),
+           width = 7,
+           height = 8,
+           dpi = 72)
+    ## ----end
+    
     cat("WQ data processed\n\n")
 }
 
@@ -717,6 +993,52 @@ FOCAL_RESPS <- var_lookup %>%
         fire_freq
     saveRDS(fire_freq, file = paste0(DATA_PATH, "processed/fire_freq.RData"))
     ## ----end
+
+    ## ---- design fire freq
+    fl <- fire_freq %>% dplyr::select(Catchment, `ZoneName`) %>% distinct %>%
+        crossing(`Year` = fire_freq %>% pull(`Year`) %>% unique)
+    ## expand(Site, `Year ref.`)#, Parameter = c('TotalN', 'TotalP', 'TSS', 'VSS', 'Discharge'))
+    units_lookup %>%
+        dplyr::select(Measure, TableLabel) %>%
+        deframe %>% list ->
+        lookup
+
+    fire_freq %>%
+        ##rename(any_of(!!!lookup)) %>%
+        ggplot() +
+        geom_point(data = fl, aes(y = Catchment, x = `Year`),
+                   position=position_nudge(x= -0.1),
+                   shape = 21, colour = 'grey80') +
+        geom_point(data = fl, aes(y = Catchment, x = `Year`),
+                   position=position_nudge(x= 0.1),
+                   shape = 21, colour = 'grey80') +
+        geom_point(data = fire_freq %>% filter(!is.na(Fire_TotalKm_WA)),
+                   aes(y = Catchment, x = `Year`, colour = lookup[[1]]["Fire_TotalKm_WA"]),
+                   position=position_nudge(x= 0.1)) +
+        geom_point(data = fire_freq %>% filter(!is.na(Fire_TotalKm_STD)),
+                   aes(y = Catchment, x = `Year`, colour = lookup[[1]]["Fire_TotalKm_STD"]),
+                   position = position_nudge(x = -0.1)) +
+        facet_grid(ZoneName ~.,
+                   space = 'free', scales = 'free_y',
+                   labeller = label_value) +
+                   ## labeller = label_wrap_gen(width = 18)) +
+                   ## labeller = label_both) +
+    ## scale_colour_discrete('Measure', labels = scales::label_parse()) + 
+        scale_colour_discrete('Measure', labels = scales::label_wrap(width = 20)) + 
+        theme_bw(14) +
+        theme(axis.title = element_blank(),
+              ## legend.spacing = unit(1,'cm'),
+              legend.key.height=unit(2, "cm"),
+              ## legend.text.align = 0,
+              strip.text.y = element_text(angle = 0)) +
+        guides(colour = guide_legend(label.vjust = 0)) ->
+        p
+    
+    ggsave(filename = paste0(FIGS_PATH, "/design_fire_freq.png"),
+           width = 12,
+           height = 10,
+           dpi = 72)
+    ## ----end
     cat("Fire frequency data processed\n\n")
 
 }
@@ -725,18 +1047,31 @@ FOCAL_RESPS <- var_lookup %>%
 {
     ## Areas
     ## ---- process data fire areas
+    spatial_lookup_fire_areas <- readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_fire_areas.RData"))
+    spatial_subcatchments_lookup <- readRDS(file = paste0(DATA_PATH, "processed/spatial_subcatchments_lookup.RData")) 
     readRDS(file = paste0(DATA_PATH, "primary/fire_areas.RData")) %>% 
+        filter(Catchment != "Overall") %>%
         pivot_longer(cols = -Catchment,
                      names_to = "Year",
                      values_to = "Fire_Areas") %>%
+        rename(`Catchment Name` = Catchment) %>%
+        left_join(spatial_lookup_fire_areas) %>%
+        dplyr::select(Catchment, everything(), -`Catchment Name`) %>%
+        left_join(spatial_subcatchments_lookup %>% dplyr::select(Catchment, ZoneName)) %>% 
         mutate(Year = as.numeric(Year)) -> fire_areas
     ## ----end
     ## Percentages
     ## ---- process data fire areas percentage
+    spatial_lookup_fire_areas <- readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_fire_areas.RData"))
+    spatial_subcatchments_lookup <- readRDS(file = paste0(DATA_PATH, "processed/spatial_subcatchments_lookup.RData")) 
     readRDS(file = paste0(DATA_PATH, "primary/fire_areas_p.RData")) %>% 
+        filter(Catchment != "Whole catchment area") %>%
         pivot_longer(cols = -Catchment,
                      names_to = "Year",
-                     values_to = "Fire_Areas") %>%
+                     values_to = "Fire_Areas_p") %>%
+        mutate(Catchment = ifelse(Catchment == 'Reichardt Creek', 'Reichhardt Creek', Catchment),
+               Catchment = ifelse(Catchment == 'Micket Creek', 'Mickett Creek', Catchment)) %>%
+        left_join(spatial_subcatchments_lookup %>% dplyr::select(Catchment, ZoneName)) %>% 
         mutate(Year = as.numeric(Year)) -> fire_areas_p
     ## ----end
     ## Combine
@@ -746,6 +1081,52 @@ FOCAL_RESPS <- var_lookup %>%
         mutate(FIRE_AREAS_ID = 1:n()) ->
         fire_areas
     saveRDS(fire_areas, file = paste0(DATA_PATH, "processed/fire_areas.RData"))
+    ## ----end
+
+    ## ---- design fire areas
+    fl <- fire_areas %>% dplyr::select(Catchment, `ZoneName`) %>% distinct %>%
+        crossing(`Year` = fire_freq %>% pull(`Year`) %>% unique)
+    ## expand(Site, `Year ref.`)#, Parameter = c('TotalN', 'TotalP', 'TSS', 'VSS', 'Discharge'))
+    units_lookup %>%
+        dplyr::select(Measure, TableLabel) %>%
+        deframe %>% list ->
+        lookup
+
+    fire_areas %>%
+        ##rename(any_of(!!!lookup)) %>%
+        ggplot() +
+        geom_point(data = fl, aes(y = Catchment, x = `Year`),
+                   position=position_nudge(x= -0.1),
+                   shape = 21, colour = 'grey80') +
+        geom_point(data = fl, aes(y = Catchment, x = `Year`),
+                   position=position_nudge(x= 0.1),
+                   shape = 21, colour = 'grey80') +
+        geom_point(data = fire_areas %>% filter(!is.na(Fire_Areas)),
+                   aes(y = Catchment, x = `Year`, colour = lookup[[1]]["Fire_Areas"]),
+                   position=position_nudge(x= 0.1)) +
+        geom_point(data = fire_areas %>% filter(!is.na(Fire_Areas_p)),
+                   aes(y = Catchment, x = `Year`, colour = lookup[[1]]["Fire_Areas_p"]),
+                   position = position_nudge(x = -0.1)) +
+        facet_grid(ZoneName ~.,
+                   space = 'free', scales = 'free_y',
+                   labeller = label_value) +
+                   ## labeller = label_wrap_gen(width = 18)) +
+                   ## labeller = label_both) +
+    ## scale_colour_discrete('Measure', labels = scales::label_parse()) + 
+        scale_colour_discrete('Measure', labels = scales::label_wrap(width = 20)) + 
+        theme_bw(14) +
+        theme(axis.title = element_blank(),
+              ## legend.spacing = unit(1,'cm'),
+              legend.key.height=unit(1, "cm"),
+              ## legend.text.align = 0,
+              strip.text.y = element_text(angle = 0)) +
+        guides(colour = guide_legend(label.vjust = 0)) ->
+        p
+    
+    ggsave(filename = paste0(FIGS_PATH, "/design_fire_areas.png"),
+           width = 12,
+           height = 10,
+           dpi = 72)
     ## ----end
     cat("Fire areas data processed\n\n")
 }
@@ -815,7 +1196,7 @@ FOCAL_RESPS <- var_lookup %>%
 
 ## Mean air temperature anomaly 
 {
-    ## ---- process data temp
+    ## ---- process data temp_anom
     readRDS(paste0(DATA_PATH, '/primary/temp_anom.RData')) %>%
         rename(any_of(c(!!! var_lookup %>%
                         dplyr::select(Measure, Var) %>%

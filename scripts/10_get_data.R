@@ -32,6 +32,25 @@ source('../scripts/functions.R')
     ## ---- glimpse WQ 2016_2022
     glimpse(wq)
     ## ----end
+
+    ## ---- get data WQ 2018 alterations
+    wq <- read_csv(file = paste0(DATA_PATH, "primary/wq_2018_editV2.csv"),
+                   trim_ws = TRUE) 
+    saveRDS(wq, file = paste0(DATA_PATH, "primary/wq_2018.RData"))
+    ## ----end
+    ## ---- glimpse WQ 2018 alterations
+    glimpse(wq)
+    ## ----end
+
+    ## ---- get data Routine sites
+    routine_sites <- read_csv(file = paste0(DATA_PATH, "primary/Routine Sites and analysis_final.csv"),
+                   trim_ws = TRUE) 
+    saveRDS(routine_sites, file = paste0(DATA_PATH, "primary/wq_routine_sites.RData"))
+    ## ----end
+    ## ---- glimpse WQ Routine sites 
+    glimpse(routine_sites)
+    ## ----end
+
 }
 
 ## Issues
@@ -421,6 +440,10 @@ units_lookup <- tribble(
     "GRP",        "($M)",         "Gross regional product ($M)",          "Gross~regional~product~($M)",
     "GRP_change", "(%)",          "Gross regional product change (%)",          "Gross~regional~product~change~(%)",
     "Catch_ERP",  "",             "Estimated resident population",        "Estimated~resident~population",
+    "Fire_TotalKm_WA", "km",      "Five year moving average fire frequency (Km)", "Five~year~moving~average~fire~frequency~(Km)",
+    "Fire_TotalKm_STD", "km",      "Five year standard deviation of fire frequency (Km)", "Five~year~standard~deviation~of~fire~frequency~(Km)",
+    "Fire_Areas", "(Km²)",        "Total fire area (Km²)",               "Total~fire~area~(km^2)",
+    "Fire_Areas_p", "(%)",        "Percentage fire area (%)",            "Percentage~fire~area~(km^2)",
     "POP",        "(#/km2)",      "Population density (pop/km2)",        "Population~density~(pop/km^2)",
     "SL",         "(m)",          "Mean sea level rise (m)",             "Mean~sea~level~rise~(m)",
     "Rainfall",   "(mm)",         "Annual Rainfall (mm)",                "Annual~rainfall~(mm)",
@@ -602,4 +625,36 @@ spatial_lookup_fire <- tribble(
     "Woods Inlet",                   "Woods Inlet",   
     )
 saveRDS(spatial_lookup_fire, file = paste0(DATA_PATH, "processed/spatial_lookup_fire.RData"))
+## ----end
+
+## ---- get data spatial_lookup_fire areas
+## Check the spelling of (spellings based on shapefiles):
+## - Reichhardt Creek
+## - Mickett Creek
+spatial_lookup_fire_areas <- tribble(
+    ~`Catchment Name`,               ~Catchment,
+    "Blackmore River (Middle Arm)",  "Blackmore River",
+    "Bleesers Creek",                "Bleesers Creek",
+    "Buffalo Creek",                 "Buffalo Creek",     
+    "Charles Point",                 "Charles Point",
+    "Creek A (Middle Arm)",          "Creek A",
+    "Darwin CBD",                    "Darwin CBD",  
+    "Elizabeth River (East Arm)",    "Elizabeth River",
+    "Howard River",                  "Howard River",
+    "Hudson Creek",                  "Hudson Creek",
+    "Kings Creek",                   "Kings Creek",
+    "Ludmilla Creek",                "Ludmilla Creek",
+    "Micket Creek",                  "Mickett Creek",
+    "Mitchell Creek",                "Mitchell Creek",
+    "Myrmidon Creek",                "Myrmidon Creek",   
+    "Palmerston South",              "Palmerston South",
+    "Pioneer Creek (Middle Arm)",    "Pioneer Creek",
+    "Rapid Creek",                   "Rapid Creek",
+    "Reichardt Creek",               "Reichhardt Creek",   
+    "Sadgroves Creek",               "Sadgroves Creek",   
+    "Sandy Creek",                   "Sandy Creek",   
+    "West Arm",                      "West Arm",   
+    "Woods Inlet",                   "Woods Inlet",   
+    )
+saveRDS(spatial_lookup_fire_areas, file = paste0(DATA_PATH, "processed/spatial_lookup_fire_areas.RData"))
 ## ----end
