@@ -698,13 +698,17 @@ FOCAL_RESPS <- var_lookup %>%
     saveRDS(primary, file = paste0(DATA_PATH, "processed/primary.RData"))
     ## ----end
     ## ---- design PRIMARY
-    fl <- primary %>% dplyr::select(Catchment, `ZoneName`, Site) %>% distinct %>%
-        crossing(`Year` = primary %>% pull(`Year`) %>% unique)
+    fl <- primary %>%
+        dplyr::select(Catchment, `ZoneName`, Site) %>%
+        distinct() %>%
+        st_drop_geometry() %>% 
+        crossing(`Year` = primary %>%
+                     pull(`Year`) %>%
+                     unique())
     ## expand(Site, `Year ref.`)#, Parameter = c('TotalN', 'TotalP', 'TSS', 'VSS', 'Discharge'))
-    units_lookup %>%
+    lookup <- units_lookup %>%
         dplyr::select(Measure, FigureLabel) %>%
-        deframe %>% list ->
-        lookup
+        deframe %>% list 
 
     primary %>%
         ##rename(any_of(!!!lookup)) %>%
@@ -859,8 +863,13 @@ FOCAL_RESPS <- var_lookup %>%
     ## ----end
 
     ## ---- design catchmentERP
-    fl <- catchment_erp %>% dplyr::select(Catchment, ZoneName) %>% distinct %>%
-        crossing(`Year` = catchment_erp %>% pull(Year) %>% unique)
+    fl <- catchment_erp %>%
+        dplyr::select(Catchment, ZoneName) %>%
+        distinct %>%
+        st_drop_geometry() %>%
+        crossing(`Year` = catchment_erp %>%
+                     pull(Year) %>%
+                     unique)
     ## expand(Site, `Year ref.`)#, Parameter = c('TotalN', 'TotalP', 'TSS', 'VSS', 'Discharge'))
     units_lookup %>%
         dplyr::select(Measure, FigureLabel) %>%
@@ -876,9 +885,9 @@ FOCAL_RESPS <- var_lookup %>%
                    position=position_nudge(x= -0.1),
                    shape = 21, colour = 'grey80') +
         geom_point(data = catchment_erp %>%
-                       filter(!is.na(ERP)),
+                       filter(!is.na(Catch_ERP)),
                    aes(y = Catchment, x = Year,
-                       colour = lookup[[1]]["ERP"]),
+                       colour = lookup[[1]]["Catch_ERP"]),
                    position=position_nudge(x= 0.1)) +
         geom_point(data = catchment_erp %>%
                        filter(!is.na(POP)),
@@ -995,8 +1004,13 @@ FOCAL_RESPS <- var_lookup %>%
     ## ----end
 
     ## ---- design fire freq
-    fl <- fire_freq %>% dplyr::select(Catchment, `ZoneName`) %>% distinct %>%
-        crossing(`Year` = fire_freq %>% pull(`Year`) %>% unique)
+    fl <- fire_freq %>%
+        dplyr::select(Catchment, `ZoneName`) %>%
+        distinct %>%
+        st_drop_geometry() %>% 
+        crossing(`Year` = fire_freq %>%
+                     pull(`Year`) %>%
+                     unique)
     ## expand(Site, `Year ref.`)#, Parameter = c('TotalN', 'TotalP', 'TSS', 'VSS', 'Discharge'))
     units_lookup %>%
         dplyr::select(Measure, TableLabel) %>%
@@ -1084,8 +1098,13 @@ FOCAL_RESPS <- var_lookup %>%
     ## ----end
 
     ## ---- design fire areas
-    fl <- fire_areas %>% dplyr::select(Catchment, `ZoneName`) %>% distinct %>%
-        crossing(`Year` = fire_freq %>% pull(`Year`) %>% unique)
+    fl <- fire_areas %>%
+        dplyr::select(Catchment, `ZoneName`) %>%
+        distinct %>%
+        st_drop_geometry() %>% 
+        crossing(`Year` = fire_freq %>%
+                     pull(`Year`) %>%
+                     unique)
     ## expand(Site, `Year ref.`)#, Parameter = c('TotalN', 'TotalP', 'TSS', 'VSS', 'Discharge'))
     units_lookup %>%
         dplyr::select(Measure, TableLabel) %>%
