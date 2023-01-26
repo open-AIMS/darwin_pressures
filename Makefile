@@ -4,7 +4,7 @@
 
 SHELL:=/bin/bash
 
-.PHONY: build build_singularity run code_container docs_container R_container code_local docs_local code_singularity docs_singularity
+.PHONY: build build_singularity run code_container docs_container R_container code_local docs_local code_singularity docs_singularity code_slurm docs_slurm
 
 build:
 	docker build . --tag darwin_pressures
@@ -39,5 +39,13 @@ docs_singularity:
 	module load singularity
 	singularity exec -B .:/home/Project darwin_pressures.sif $(MAKE) -f docs/Makefile
 
+code_slurm:
+	@echo "Submit slurm job to run code"
+	sbatch code.slurm
+
+docs_slurm:
+	@echo "Submit slurm job to compile docs"
+	sbatch docs.slurm
+
 clean:
-	rm -f *.log *.aux *.md *.out texput.log
+	rm -f *.log *.aux *.out texput.log *.stderr
