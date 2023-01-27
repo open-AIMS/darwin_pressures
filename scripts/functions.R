@@ -9,6 +9,8 @@ library(emmeans)
 library(patchwork)
 library(sf)
 library(ggsflabel)
+library(foreach)
+library(doParallel)
 sf_use_s2(FALSE)
 ## ----end
 
@@ -25,6 +27,16 @@ if (!dir.exists(paste0(DATA_PATH,"summarised"))) dir.create(paste0(DATA_PATH, "s
 
 if (!dir.exists(OUTPUT_PATH)) dir.create(OUTPUT_PATH)
 if (!dir.exists(FIGS_PATH)) dir.create(FIGS_PATH)
+## ----end
+
+## ---- set up cores function
+set_cores <- function() {
+    if (detectCores() < 9) {
+        registerDoParallel(cores=4)
+    } else {
+        registerDoParallel(cores=20)
+    }
+}
 ## ----end
 
 ## ---- EDA function
@@ -128,6 +140,406 @@ EDA_pressures <- function(dat, var) {
               panel.spacing.x = unit("0.5", "cm"))
 }
 ## ----end
+
+## ---- EDA associations file append function
+file_append <- function(type) {
+    case_when(
+        type == "Discrete" ~ ".",
+        type == "Routine" ~ ".routine."
+    )
+}
+## ----end
+
+## ---- EDA associations data prep function
+assoc_data_pred <- function(data, type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
+    units_lookup <- readRDS(file = paste0(DATA_PATH,
+                                          "processed/units_lookup.RData"))
+    spatial_lookup <- readRDS(file = paste0(DATA_PATH,
+                                            "processed/spatial_lookup.RData"))
+    DATE_RANGE <- data %>% dplyr::select(Date, !!FOCAL_RESPS) %>%
+        pivot_longer(cols = -Date) %>%
+        filter(!is.na(value)) %>%
+        pull(Date) %>% range()
+
+    FILE_APPEND <- file_append(type)
+    
+    for (j in FOCAL_RESPS) {
+        lab <- units_lookup %>%
+            filter(Measure == {{j}}) %>%
+            pull(FigureLabel)
+        cat(j, "\n")
+        ## Save data
+        data.EDA.resp <-
+            data %>%
+            {if (type == 'Discrete')
+                 filter(., Source == 'Discrete')
+             else .
+            } %>%
+            {if (type == 'Routine')
+                 filter(., Type == 'Routine')
+             else .
+            } %>%
+            droplevels() %>%
+            filter(!is.na(!!sym(j))) %>%
+            dplyr::select(WQ_ID, WQ_SITE, !!j, ZoneName, Zone, Year, Date) %>%
+            distinct() %>%
+            mutate(Value = !!sym(j),
+                   Measure = j,
+                   Value = ifelse(Value == 0, 0.01, Value))
+        saveRDS(data.EDA.resp,
+                file = paste0(DATA_PATH, "summarised/data.EDA",
+                              FILE_APPEND,"resp__", j, ".RData"))
+
+        for (i in 1:nrow(FOCAL_PRESSURES)) {
+            MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+            ID <- FOCAL_PRESSURES[i, "ID"][[1]]
+            SITE_ID <- FOCAL_PRESSURES[i, "SITE_ID"][[1]]
+            if (is.na(SITE_ID)) SITE_ID <- NULL
+            FACET <- FOCAL_PRESSURES[i, "Scale"][[1]]
+            if (is.na(FACET)) FACET <- "Whole Harbour"
+            cat("\t",MEASURE, "\n")
+
+            ## save the above settings for future loops
+            settings <- list(
+                DATE_RANGE = DATE_RANGE,
+                RESP = j,
+                lab = lab,
+                PRES = MEASURE,
+                ID = ID,
+                SITE_ID = SITE_ID,
+                FACET = FACET
+            )
+            saveRDS(settings,
+                    file = paste0(DATA_PATH, "summarised/settings",
+                                  FILE_APPEND,"__", j, "__", MEASURE,".RData"))
+            ## Save dual plot data
+            if (j == FOCAL_RESPS[1]) {
+                data.EDA.pres <-
+                    data %>%
+                    filter(!is.na(!!sym(MEASURE))) %>%
+                    dplyr::select(Catchment, ZoneName, Zone, Year, !!MEASURE, !!ID, !!SITE_ID) %>%
+                    distinct() %>%
+                    mutate(Value = !!sym(MEASURE)) %>%
+                    filter(!is.na(Value)) %>%
+                    mutate(Date = as.Date(paste0(Year, "-01-01")),
+                           Measure = MEASURE) %>%
+                    group_by(ZoneName) %>%
+                    mutate(Min = min(Value, na.rm = TRUE),
+                           Max = max(Value, na.rm = TRUE),
+                           sValue = scales::rescale(Value,
+                                                    from = c(unique(Min), unique(Max)),
+                                                    to = c(1, 100))) %>%
+                    ungroup() %>%
+                    dplyr::select(-Zone) %>%
+                    left_join(spatial_lookup %>% dplyr::select(Zone, ZoneName)) %>%
+                    suppressMessages()
+
+                saveRDS(data.EDA.pres,
+                        file = paste0(DATA_PATH, "summarised/data.EDA",
+                                      FILE_APPEND,"pres__", MEASURE, ".RData"))
+            }
+
+            ## Save associations data
+            data.EDA <-
+                data %>%
+                {if (type == 'Discrete')
+                     filter(., Source == 'Discrete')
+                 else .
+                } %>%
+                {if (type == 'Routine')
+                     filter(., Type == 'Routine')
+                 else .
+                } %>%
+                droplevels() %>%
+                filter(!is.na(!!sym(j)), !is.na(!!sym(MEASURE))) %>%
+                dplyr::select(WQ_ID, WQ_SITE, !!j, ZoneName, Zone, Year, !!MEASURE, !!ID, !!SITE_ID) %>%
+                distinct() %>%
+                mutate(Value = !!sym(j)) 
+            saveRDS(data.EDA,
+                    file = paste0(DATA_PATH, "summarised/data.EDA",
+                                  FILE_APPEND,"__", j, "__", MEASURE, ".RData"))
+        }
+    }
+}
+## ----end
+## ---- EDA associations dual plots function
+dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
+    set_cores()    
+
+    FILE_APPEND <- file_append(type)
+    for (j in FOCAL_RESPS) {
+        cat(j, "\n")
+        data.EDA.resp <- readRDS(file = paste0(DATA_PATH,
+                                               "summarised/data.EDA",
+                                               FILE_APPEND,"resp__", j, ".RData"))
+        ## for (i in 1:nrow(FOCAL_PRESSURES)) {
+        foreach (i = 1:nrow(FOCAL_PRESSURES)) %dopar% {
+            MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+            settings <- readRDS(paste0(DATA_PATH, "summarised/settings",
+                                       FILE_APPEND,"__", j, "__", MEASURE,".RData"))
+            list2env(settings, envir = globalenv())
+            cat("\t",MEASURE, "\n")
+            data.EDA.pres <- readRDS(file = paste0(DATA_PATH, "summarised/data.EDA",
+                                                   FILE_APPEND,"pres__", MEASURE, ".RData"))
+
+            g1 <- data.EDA.resp %>% group_by(ZoneName) %>%
+                ## nest() %>%
+                ## rename(Resp = data) %>%
+                ## nest the data
+                summarise(Resp = list(cur_data_all()), .groups = "drop") %>%
+                mutate(Resp = map(.x = Resp,
+                                  .f = ~.x %>% mutate(x = lubridate::decimal_date(Date),
+                                                      ZoneName = paste0(Zone, ". ", ZoneName)))) %>%
+                ## fit Gamma GAM
+                mutate(GAM = map(.x = Resp,
+                                 .f = ~fitSimpleGAM_resp(.x)),
+                       ## model predictions
+                       Pred = map2(.x = Resp,
+                                   .y = GAM,
+                                   .f = ~predSimpleGAM_resp(.x, .y)),
+                       ## get min and max on raw scale
+                       Resp = map2(.x = Resp,
+                                   .y = Pred,
+                                   .f = ~ .x %>% mutate(Min = min(c(Value,.y$lower), na.rm = TRUE),
+                                                        Max = max(c(Value,.y$upper), na.rm = TRUE))),
+                       ## log-transform Value, Min and Max
+                       Resp = map(.x = Resp,
+                                  .f = ~ .x %>% mutate(across(c(Value, Min, Max),
+                                                              .f = list(l = log),
+                                                              .names = "{.fn}{.col}"))),
+                       ## Rescale the log Values
+                       Resp = map(.x = Resp,
+                                  .f = ~ .x %>%
+                                      mutate(slValue = scales::rescale(lValue,
+                                                                       from = c(unique(lMin), unique(lMax)),
+                                                                       to = c(1, 100)))),
+                       ## Put predictions on log scale
+                       Pred = map(.x = Pred,
+                                  .f = ~ .x %>% mutate(across(c(Pred, lower, upper),
+                                                              .f = list(l = log),
+                                                              .names = "{.fn}{.col}"))),
+                       ## Rescale predictions (Pred, lower, upper)
+                       Pred = map2(.x = Pred,
+                                   .y = Resp,
+                                   .f = ~ .x %>%
+                                       mutate(across(c(lPred, llower,lupper),
+                                                     .f = list(s = ~ scales::rescale(.x,
+                                                                                     from = c(unique(.y$lMin),
+                                                                                              unique(.y$lMax)),
+                                                                                     to = c(1,100))),
+                                                     .names = "{.fn}{.col}")))
+                       ) %>% 
+                full_join(data.EDA.pres %>%
+                          group_by(ZoneName) %>%
+                          ## nest() %>%
+                          ## rename(Pres = data) %>%
+                          summarise(Pres = list(cur_data_all()), .groups = "drop") %>%
+                          mutate(Pres = map(.x = Pres,
+                                            .f = ~.x %>%
+                                                mutate(x = lubridate::decimal_date(as.Date(
+                                                                          paste0(Year, "-01-01"))),
+                                                       ZoneName = paste0(Zone, ". ", ZoneName)))) %>%
+                          mutate(GAM_pres = map(.x = Pres,
+                                                .f = ~fitSimpleGAM_pres(.x)),
+                                 Pred_pres = map2(.x = Pres,
+                                                  .y = GAM_pres,
+                                                  .f = ~predSimpleGAM_pres(.x, .y)),
+                                 Pred_pres1 = map2(.x = Pred_pres, .y = Pres,
+                                                   .f = ~ {if(!is.null(.x))
+                                                               .x %>%
+                                                                   mutate(across(c(Pred, lower, upper),
+                                                                                 ~ scales::rescale(.x,
+                                                                                                   from = c(unique(.y$Min), unique(.y$Max)),
+                                                                                                   to = c(1, 100))))
+                                                   }
+                                                   )
+                                 )
+                          ) %>%
+                left_join(spatial_lookup %>% dplyr::select(ZoneName, Zone)) %>%
+                mutate(ZoneName = forcats::fct_reorder(ZoneName, Zone)) %>%
+                arrange(ZoneName) %>%
+                filter(!is.na(ZoneName)) %>%
+                mutate(g = pmap(.l = list(Resp, Pres, Pred, Pred_pres1),
+                                .f = ~dual_plot(..1, ..2, ..3, ..4, DATE_RANGE))) %>%
+                suppressMessages() %>%
+                suppressWarnings()
+
+            saveRDS(g1, file = paste0(DATA_PATH, "summarised/dual_plot",
+                                      FILE_APPEND,"__",j,"__",MEASURE,".RData"))
+            FACETS <- g1 %>% pull(ZoneName) %>% unique %>% length()
+            NCOL <- wrap_dims(FACETS, ncol = 3)[2]
+            NROW <- wrap_dims(FACETS, ncol = 3)[1]
+            g <-  patchwork::wrap_plots(g1$g, ncol = NCOL) & theme_bw()
+            ggsave(filename = paste0(FIGS_PATH, "/EDA_dual_plot",
+                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                   g,
+                   width = 4 * NCOL,
+                   height = 3 * NROW,
+                   dpi = 72)
+        }
+    }
+    
+}
+
+## ----end
+## ---- EDA associations associations function
+associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
+    set_cores()    
+
+    FILE_APPEND <- file_append(type)
+    for (j in FOCAL_RESPS) {
+        cat(j, "\n")
+        ylab <- units_lookup %>%
+            filter(Measure == {{j}}) %>%
+            pull(TableLabel)
+        ## for (i in 1:nrow(FOCAL_PRESSURES)) {
+        foreach (i = 1:nrow(FOCAL_PRESSURES)) %dopar% {
+            MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+            settings <- readRDS(paste0(DATA_PATH, "summarised/settings",
+                                       FILE_APPEND,"__", j, "__", MEASURE,".RData"))
+            list2env(settings, envir = globalenv())
+            cat("\t",MEASURE, "\n")
+            xlab <- units_lookup %>%
+                filter(Measure == {{MEASURE}}) %>% 
+                pull(TableLabel)
+            
+            data.EDA <- readRDS(file = paste0(DATA_PATH, "summarised/data.EDA",
+                                              FILE_APPEND,"__", j, "__", MEASURE, ".RData"))
+                ## mutate(Value = ifelse(Value==0, 0.001, Value)) %>%
+            g <- data.EDA %>%
+                ggplot(aes(y = Value, x = !!sym(MEASURE))) +
+                geom_point() +
+                ## geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+                ##             method.args = list(method = "REML",
+                ##                                family = Gamma(link = 'log'))) +
+                ## scale_y_continuous(trans = scales::pseudo_log_trans()) 
+                geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+                            method.args = list(method = "REML",
+                                               family = gaussian()),
+                            color = "blue",
+                            fill = "#0000FF50") +
+                ## scale_y_log10(scales::label_parse()(lab)) +
+                ## scale_x_continuous(scales::label_parse()(xlab)) +
+                scale_y_log10(ylab) +
+                scale_x_continuous(xlab) +
+                theme_bw() +
+                theme(strip.text.y = element_text(angle = 0),
+                      strip.background = element_rect(fill = "#446e9b50"),
+                      panel.spacing.x = unit("0.5", "cm"))
+            FACETS <- data.EDA %>% pull(ZoneName) %>% unique %>% length()
+            NCOL <- wrap_dims(FACETS, ncol = 3)[2]
+            NROW <- wrap_dims(FACETS, ncol = 3)[1]
+
+            p <- patchwork::wrap_plots( 
+                          g + facet_wrap(~ZoneName, scales='free', ncol = 3),
+                          g,
+                          ncol = 1,
+                          heights = c(2*NROW, 2*2)
+                          )
+            ggsave(filename = paste0(FIGS_PATH, "/gamPlots",
+                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                   p,
+                   width = NCOL * 4,
+                   height = NROW * 4,
+                   dpi = 72) %>%
+                suppressMessages() %>%
+                suppressWarnings()
+
+            ## Fit models
+            data.EDA.mod <- data.EDA %>%
+                mutate(DV = !!sym(MEASURE)) %>%
+                { if (max(.$DV) > 1e5) mutate(.,DV = DV/1e5) else . } %>%
+                group_by(Zone, ZoneName) %>%
+                summarise(data = list(cur_data_all()), .groups = "drop") %>%
+                mutate(Mod = map(.x = data,
+                                 .f = ~fitModels(.x)),
+                       ## ModLin = map(.x = data,
+                       ##           .f = ~fitModel(.x, type = 'linear')),
+                       ## GAM = map(.x = data,
+                       ##           .f = ~fitModelGAM(.x)),
+                       Sum = map(.x = Mod,
+                                 .f = ~ {if(!is.null(.x))
+                                             summary(.x)
+                                         else NULL}),
+                       Params = map(.x = Mod,
+                                    .f = ~ {if(!is.null(.x))
+                                                parameters::model_parameters(.x)
+                                            else NULL}),
+                       Params2 = map(.x = Mod,
+                                    .f = ~ {if(!is.null(.x))
+                                                broom.mixed::tidy(.x, conf.int = TRUE)
+                                            else NULL}),
+                       R2 = map(.x = Mod,
+                                .f = ~ {if(!is.null(.x))
+                                            MuMIn::r.squaredGLMM(.x)
+                                        else NULL}),
+                       DHARMa = map(.x = Mod,
+                                    .f = ~ {if(!is.null(.x))
+                                                DHARMa::simulateResiduals(.x, plot = FALSE)
+                                                else NULL}),
+                       DHARMa_uniform = map2(.x = DHARMa, .y = paste0(Zone, ". ", ZoneName),
+                                             .f = ~patchwork::wrap_elements(~DHARMa::testUniformity(.x)) +
+                                                 ggtitle(.y)),
+                       DHARMa_quantiles = map2(.x = DHARMa, .y = paste0(Zone, ". ", ZoneName),
+                                               .f = ~{if(!is.null(.x))
+                                                          patchwork::wrap_elements(~DHARMa::testQuantiles(.x)) +
+                                                              ggtitle(.y)
+                                                          else NULL}
+                                              ),
+                       Emmeans = map2(.x = Mod,
+                                      .y = data,
+                                      .f = ~{if(!is.null(.x))
+                                                emmeansCalc(.x, .y, MEASURE)
+                                                else NULL}),
+                       Part = map2(.x = Mod,
+                                   .y = data,
+                                   .f = ~ {if(!is.null(.x))
+                                               partialPlots(.x, .y, j, MEASURE, ylab, xlab)
+                                               else NULL})
+                       ## Partial = map(.x = Mod,
+                       ##               .f = ~ggeffects::ggemmeans(.x, terms = ~ DV) %>% plot(add.data = TRUE) +
+                       ##                   scale_y_log10()) 
+                       ) %>%
+                suppressMessages() %>%
+                suppressWarnings()
+            saveRDS(data.EDA.mod %>% dplyr::select(Zone, ZoneName, Mod),
+                    file = paste0(DATA_PATH,"summarised/data.EDA",FILE_APPEND,"mod__",j,"__",MEASURE,".RData"))
+                
+            p <- patchwork::wrap_plots(data.EDA.mod$DHARMa_uniform, ncol = NCOL) &
+                theme(plot.title = element_text(hjust = 0.5))
+            ggsave(filename = paste0(FIGS_PATH, "/DHARMa_unif",
+                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                   p,
+                   width = NCOL * 4,
+                   height = NROW * 4,
+                   dpi = 72)
+
+            p <- patchwork::wrap_plots(data.EDA.mod$DHARMa_quantiles, ncol = NCOL) &
+                theme(plot.title = element_text(hjust = 0.5))
+            ggsave(filename = paste0(FIGS_PATH, "/DHARMa_quant",
+                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                   p,
+                   width = NCOL * 4,
+                   height = NROW * 4,
+                   dpi = 72)
+            p <- patchwork::wrap_plots(data.EDA.mod$Part, ncol = NCOL) 
+            ggsave(filename = paste0(FIGS_PATH, "/partial",
+                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                   p,
+                   width = NCOL * 4,
+                   height = NROW * 3,
+                   dpi = 72)
+
+            data.EDA.mod.sum <- data.EDA.mod %>% dplyr::select(Zone, ZoneName, Params, Params2,R2, Emmeans)
+            saveRDS(data.EDA.mod.sum,
+                    file = paste0(DATA_PATH,"summarised/data.EDA",
+                                     FILE_APPEND,"mod.sum__",j,"__",MEASURE,".RData"))
+            
+        }
+    }
+}
+## ----end
+
 
 ## ---- EDA fitSimpleGAM_resp function
 fitSimpleGAM_resp <- function(d) {
@@ -285,8 +697,10 @@ fitModels <- function(dat) {
                                 ## family = glmmTMB::tweedie(link = "log")
                                 family = Gamma(link = "log"),
                                 REML = TRUE
-                                )
-        summary(mod)
+                                ) %>%
+            suppressMessages() %>%
+            suppressWarnings()
+        ## summary(mod)
         mod
     }
     glmmModel <- function(dat, REML = TRUE) {
@@ -297,8 +711,10 @@ fitModels <- function(dat) {
                                 ## family = glmmTMB::tweedie(link = "log")
                                 family = Gamma(link = "log"),
                                 REML = REML
-                                )
-        summary(mod)
+                                ) %>% 
+            suppressMessages() %>%
+            suppressWarnings()
+        ## summary(mod)
         mod
     }
     gamModel <- function(dat) {
@@ -310,38 +726,40 @@ fitModels <- function(dat) {
                          ## family = glmmTMB::tweedie(link = "log")
                          family = Gamma(link = "log"),
                          method = 'REML'
-                         )
-        summary(mod)
+                         ) %>% 
+            suppressMessages() %>%
+            suppressWarnings()
+        ## summary(mod)
         mod
     }
     ## start with poly
     if (length(unique(dat$DV))>4) {
-        mod.poly <- try(polyModel(dat))
+        mod.poly <- try(polyModel(dat), silent = TRUE)
         if (class(mod.poly) == "try-error") mod.poly <- NULL
     } else { 
-        mod.poly <- try(glmmModel(dat))
+        mod.poly <- try(glmmModel(dat), silent = TRUE)
         if (class(mod.poly) == "try-error") mod.poly <- NULL
     }
     if(!is.null(mod.poly)) mods[[length(mods) + 1]] <- mod.poly
     ## linear model
-    mod.lin <- try(glmmModel(dat))
-    if (class(mod.lin) == "try-error") mod.lin <- try(glmmMod(dat, REML = FALSE))
-    if (class(mod.lin) == "try-error") mod.lin <- try(glmmTMB::glmmTMB(Value ~ DV, data = dat, family = Gamma(link = 'log')))
+    mod.lin <- try(glmmModel(dat), silent = TRUE)
+    if (class(mod.lin) == "try-error") mod.lin <- try(glmmMod(dat, REML = FALSE), silent = TRUE)
+    if (class(mod.lin) == "try-error") mod.lin <- try(glmmTMB::glmmTMB(Value ~ DV, data = dat, family = Gamma(link = 'log')), silent = TRUE)
     if (class(mod.lin) == "try-error") mod.lin <- NULL
     if(!is.null(mod.lin)) mods[[length(mods) + 1]] <- mod.lin
     ## gam modelr
     if (length(unique(dat$DV))>4) {
-        mod.gam <- try(gamModel(dat))
+        mod.gam <- try(gamModel(dat), silent = TRUE)
         if (any(class(mod.gam) == "try-error")) mod.gam <- NULL
     } else { 
-        mod.gam <- try(glmmModel(dat))
+        mod.gam <- try(glmmModel(dat), silent = TRUE)
         if (class(mod.gam) == "try-error") {
             k = min(10, length(unique(dat$DV)))
             mod.gam <- try(mgcv::gam(Value ~ s(DV, bs = 'ps', k = k),# + s(WQ_SITE, bs = 're'),
                              data = dat,
                              ## family = glmmTMB::tweedie(link = "log")
                              family = Gamma(link = "log")
-                             ))
+                             ), silent = TRUE)
             mod.gam}
         if (any(class(mod.gam) == "try-error")) mod.gam <- NULL
     }
@@ -377,8 +795,8 @@ fitModelGAM <- function(dat) {
                                 data = dat,
                                 ## family = glmmTMB::tweedie(link = "log")
                                 family = Gamma(link = "log")
-                                )
-        })
+                             )
+        }, silent = TRUE)
         if (class(mod) == "try-error") mod <- NULL
     }
     mod
