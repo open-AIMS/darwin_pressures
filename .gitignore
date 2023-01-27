@@ -9,3 +9,5 @@ cache/
 data/
 .Rhistory
 output/
+*.pdf
+*.sif
