@@ -68,8 +68,8 @@ knitr::read_chunk('../scripts/00_main.R')
 knitr::read_chunk('../scripts/10_get_data.R')
 knitr::read_chunk('../scripts/20_process_data.R')
 knitr::read_chunk('../scripts/30_EDA.R')
-source('../scripts/functions.R')
 
+source('../scripts/functions.R')
 ```
 
 # Background

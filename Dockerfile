@@ -84,10 +84,38 @@ RUN R -e "options(repos = \
   install.packages('glmmTMB'); \ 
   install.packages('readxl'); \ 
   install.packages('modelr'); \ 
-  install.packages('devtools'); \ 
-  devtools::install_github("yutannihilation/ggsflabel@a489481bec896f874c95ed6016baf38f21b79cc3"); \ 
 "
 
+## Install packages
+RUN apt-get update \ 
+  && apt-get install -y --no-install-recommends \ 
+  libfontconfig1-dev \
+  libharfbuzz-dev \
+  libfribidi-dev \
+  cmake \
+  && rm -rf /var/lib/apt/lists/* 
+
+RUN R -e "options(repos = \
+    list(CRAN = 'http://mran.revolutionanalytics.com/snapshot/2022-10-04/'));\
+  install.packages('devtools'); \ 
+  devtools::install_github(\"yutannihilation/ggsflabel@a489481bec896f874c95ed6016baf38f21b79cc3\"); \ 
+" 
+
+
+RUN R -e "options(repos = \
+    list(CRAN = 'http://mran.revolutionanalytics.com/snapshot/2022-10-04/'));\
+  install.packages('glmmTMB'); \ 
+" 
+
+RUN R -e "options(repos = \
+    list(CRAN = 'http://mran.revolutionanalytics.com/snapshot/2022-10-04/'));\
+  install.packages('performance'); \ 
+" 
+
+RUN R -e "options(repos = \
+    list(CRAN = 'http://mran.revolutionanalytics.com/snapshot/2022-10-04/'));\
+  install.packages('doParallel'); \ 
+" 
 ## Create project directory in docker image 
 RUN mkdir /home/Project
 
