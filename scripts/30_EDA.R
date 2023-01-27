@@ -152,6 +152,7 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
     ## ---- EDA Routine Associations
     associations(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES)
     associations(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES, lag = 1)
+    associations(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES, lag = 2)
     ## ----end
 }
 
@@ -168,6 +169,8 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
 
     ## ---- EDA Associations
     associations(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES)
+    associations(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 1)
+    associations(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 2)
     
     ## for (j in FOCAL_RESPS) {
     ##     cat(j, "\n")

@@ -425,16 +425,24 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
             settings <- readRDS(paste0(DATA_PATH, "summarised/settings",
                                        FILE_APPEND,"__", j, "__", MEASURE,".RData"))
             list2env(settings, envir = globalenv())
+            if (!is.na(lag)) {
+                MEASURE_ <- paste0(MEASURE,"_lag",lag)
+                LAB_LAG <- paste0("Lag (",lag,"yr) ")
+            } else {
+                MEASURE_ <- MEASURE
+                LAB_LAB <- ""
+            }
             cat("\t",MEASURE, "\n")
             xlab <- units_lookup %>%
                 filter(Measure == {{MEASURE}}) %>% 
-                pull(TableLabel)
+                pull(TableLabel) %>%
+                paste0(LAB_LAG, .)
             
             data.EDA <- readRDS(file = paste0(DATA_PATH, "summarised/data.EDA",
                                               FILE_APPEND,"__", j, "__", MEASURE, ".RData"))
                 ## mutate(Value = ifelse(Value==0, 0.001, Value)) %>%
             g <- data.EDA %>%
-                ggplot(aes(y = Value, x = !!sym(MEASURE))) +
+                ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
                 geom_point() +
                 ## geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
                 ##             method.args = list(method = "REML",
@@ -464,7 +472,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                           heights = c(2*NROW, 2*2)
                           )
             ggsave(filename = paste0(FIGS_PATH, "/gamPlots",
-                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                                     FILE_APPEND,"__",j,"__",MEASURE_,".png"),
                    p,
                    width = NCOL * 4,
                    height = NROW * 4,
@@ -474,7 +482,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
 
             ## Fit models
             data.EDA.mod <- data.EDA %>%
-                mutate(DV = !!sym(MEASURE)) %>%
+                mutate(DV = !!sym(MEASURE_)) %>%
                 { if (max(.$DV) > 1e5) mutate(.,DV = DV/1e5) else . } %>%
                 group_by(Zone, ZoneName) %>%
                 summarise(data = list(cur_data_all()), .groups = "drop") %>%
@@ -516,12 +524,12 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                        Emmeans = map2(.x = Mod,
                                       .y = data,
                                       .f = ~{if(!is.null(.x))
-                                                emmeansCalc(.x, .y, MEASURE)
+                                                emmeansCalc(.x, .y, MEASURE_)
                                                 else NULL}),
                        Part = map2(.x = Mod,
                                    .y = data,
                                    .f = ~ {if(!is.null(.x))
-                                               partialPlots(.x, .y, j, MEASURE, ylab, xlab)
+                                               partialPlots(.x, .y, j, MEASURE_, ylab, xlab)
                                                else NULL})
                        ## Partial = map(.x = Mod,
                        ##               .f = ~ggeffects::ggemmeans(.x, terms = ~ DV) %>% plot(add.data = TRUE) +
@@ -530,12 +538,13 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 suppressMessages() %>%
                 suppressWarnings()
             saveRDS(data.EDA.mod %>% dplyr::select(Zone, ZoneName, Mod),
-                    file = paste0(DATA_PATH,"summarised/data.EDA",FILE_APPEND,"mod__",j,"__",MEASURE,".RData"))
+                    file = paste0(DATA_PATH,"summarised/data.EDA",
+                                  FILE_APPEND,"mod__",j,"__",MEASURE_,".RData"))
                 
             p <- patchwork::wrap_plots(data.EDA.mod$DHARMa_uniform, ncol = NCOL) &
                 theme(plot.title = element_text(hjust = 0.5))
             ggsave(filename = paste0(FIGS_PATH, "/DHARMa_unif",
-                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                                     FILE_APPEND,"__",j,"__",MEASURE_,".png"),
                    p,
                    width = NCOL * 4,
                    height = NROW * 4,
@@ -544,14 +553,14 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
             p <- patchwork::wrap_plots(data.EDA.mod$DHARMa_quantiles, ncol = NCOL) &
                 theme(plot.title = element_text(hjust = 0.5))
             ggsave(filename = paste0(FIGS_PATH, "/DHARMa_quant",
-                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                                     FILE_APPEND,"__",j,"__",MEASURE_,".png"),
                    p,
                    width = NCOL * 4,
                    height = NROW * 4,
                    dpi = 72)
             p <- patchwork::wrap_plots(data.EDA.mod$Part, ncol = NCOL) 
             ggsave(filename = paste0(FIGS_PATH, "/partial",
-                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                                     FILE_APPEND,"__",j,"__",MEASURE_,".png"),
                    p,
                    width = NCOL * 4,
                    height = NROW * 3,
@@ -560,7 +569,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
             data.EDA.mod.sum <- data.EDA.mod %>% dplyr::select(Zone, ZoneName, Params, Params2,R2, Emmeans)
             saveRDS(data.EDA.mod.sum,
                     file = paste0(DATA_PATH,"summarised/data.EDA",
-                                     FILE_APPEND,"mod.sum__",j,"__",MEASURE,".RData"))
+                                     FILE_APPEND,"mod.sum__",j,"__",MEASURE_,".RData"))
             
         }
     }
