@@ -1385,6 +1385,8 @@ FOCAL_RESPS <- var_lookup %>%
         full_join(primary %>% ##slice(1:32) %>%
                   dplyr::select(Year,
                                 TotalN, TotalP, TSS, VSS, Discharge,
+                                TotalN_lag1, TotalP_lag1, TSS_lag1, VSS_lag1, Discharge_lag1,
+                                TotalN_lag2, TotalP_lag2, TSS_lag2, VSS_lag2, Discharge_lag2,
                                 PRIMARY_SITE_ID = Site,
                                 ZoneName, Catchment, CatchmentNumber, PRIMARY_ID) %>%
                   st_drop_geometry()
@@ -1392,8 +1394,8 @@ FOCAL_RESPS <- var_lookup %>%
         full_join(erp) %>%
         full_join(catchment_erp %>%
                   dplyr::select(Year,
-                                Catch_ERP,
-                                POP,
+                                Catch_ERP, Catch_ERP_lag1, Catch_ERP_lag2,
+                                POP, POP_lag1, POP_lag2,
                                 Catchment,
                                 CatchmentNumber,
                                 ZoneName, CATCHMENT_ERP_ID) %>%

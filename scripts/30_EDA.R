@@ -353,8 +353,6 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
     ##         ## summary(mod)
     ##         ## mod.resid <- DHARMa::simulateResiduals(mod)
     ##         ## plot(mod.resid)
-        }
-    }
     ## ----end
 }
 
