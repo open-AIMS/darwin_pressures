@@ -685,7 +685,11 @@ FOCAL_RESPS <- var_lookup %>%
                       Discharge = `Discharge volume (annual kL)`) %>%
         mutate(across(c(Site, ZoneName, Catchment),
                       ~forcats::fct_reorder(.x, CatchmentNumber))) %>%
-        mutate(PRIMARY_ID = 1:n()) ->
+        mutate(PRIMARY_ID = 1:n()) %>%
+        mutate(across(c(TotalP, TotalN, TSS, VSS, Discharge),
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         ## left_join(spatial_lookup_primary %>%
         ##           dplyr::select(-Latitude, -Longitude) %>%
         ##           distinct) ->
@@ -809,7 +813,11 @@ FOCAL_RESPS <- var_lookup %>%
                       ERP_growth = `ERP growth`,
                       GRP = `GRP ($M)`,
                       GRP_change = `Change GRP from previous year (%)`) %>% 
-        mutate(ERP_ID = 1:n()) ->
+        mutate(ERP_ID = 1:n()) %>%
+        mutate(across(c(ERP, ERP_growth, GRP, GRP_change),
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         erp
     saveRDS(erp, file = paste0(DATA_PATH, "processed/erp.RData"))
     ## ----end
@@ -857,7 +865,11 @@ FOCAL_RESPS <- var_lookup %>%
                   dplyr::select(-nudge_x, -Lab_lat, -Lab_long, -Curvature)) %>%
         mutate(across(c(ZoneName, Catchment),
                       ~forcats::fct_reorder(.x, CatchmentNumber))) %>% 
-        mutate(CATCHMENT_ERP_ID = 1:n()) ->
+        mutate(CATCHMENT_ERP_ID = 1:n()) %>%
+        mutate(across(c(Catch_ERP, POP),
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         catchment_erp
     saveRDS(catchment_erp, file = paste0(DATA_PATH, "processed/catchment_erp.RData"))
     ## ----end
@@ -998,7 +1010,11 @@ FOCAL_RESPS <- var_lookup %>%
                     names_prefix = "Fire_TotalKm_") %>% 
         left_join(spatial_subcatchments_lookup %>%
                   dplyr::select(Catchment, ZoneName)) %>% 
-        mutate(FIRE_FREQ_ID = 1:n()) ->
+        mutate(FIRE_FREQ_ID = 1:n()) %>% 
+        mutate(across(matches("^Fire_TotalKm.*", ignore.case = FALSE),
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         fire_freq
     saveRDS(fire_freq, file = paste0(DATA_PATH, "processed/fire_freq.RData"))
     ## ----end
@@ -1092,7 +1108,11 @@ FOCAL_RESPS <- var_lookup %>%
     ## ---- process data fire areas combined
     fire_areas %>%
         full_join(fire_areas_p) %>% 
-        mutate(FIRE_AREAS_ID = 1:n()) ->
+        mutate(FIRE_AREAS_ID = 1:n()) %>%
+        mutate(across(matches("^Fire_Areas.*", ignore.case = FALSE),
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         fire_areas
     saveRDS(fire_areas, file = paste0(DATA_PATH, "processed/fire_areas.RData"))
     ## ----end
@@ -1159,7 +1179,11 @@ FOCAL_RESPS <- var_lookup %>%
                         dplyr::select(Measure, Var) %>%
                         deframe))) %>%
         dplyr::select(-`Financial year`) %>% 
-        mutate(SEA_LEVEL_FIN_ID = 1:n()) ->
+        mutate(SEA_LEVEL_FIN_ID = 1:n()) %>%
+        mutate(across("SL",
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         sea_level_fin
     saveRDS(sea_level_fin, file = paste0(DATA_PATH, "processed/sea_level_fin.RData"))
     ## ----end
@@ -1175,7 +1199,11 @@ FOCAL_RESPS <- var_lookup %>%
                         dplyr::select(Measure, Var) %>%
                         deframe))) %>%
         dplyr::select(-`Financial year`) %>% 
-        mutate(RAINFALL_FIN_ID = 1:n()) ->
+        mutate(RAINFALL_FIN_ID = 1:n()) %>%
+        mutate(across("Rainfall",
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         rainfall_fin
     saveRDS(rainfall_fin, file = paste0(DATA_PATH, "processed/rainfall_fin.RData"))
     ## ----end
@@ -1190,7 +1218,11 @@ FOCAL_RESPS <- var_lookup %>%
                         dplyr::select(Measure, Var) %>%
                         deframe))) %>%
         dplyr::select(Year, Rainfall_anom) %>% 
-        mutate(RAINFALL_ANOM_ID = 1:n()) ->
+        mutate(RAINFALL_ANOM_ID = 1:n()) %>%
+        mutate(across("Rainfall_anom",
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         rainfall_anom
     saveRDS(rainfall_anom, file = paste0(DATA_PATH, "processed/rainfall_anom.RData"))
     ## ----end
@@ -1206,7 +1238,11 @@ FOCAL_RESPS <- var_lookup %>%
                         dplyr::select(Measure, Var) %>%
                         deframe))) %>%
         dplyr::select(Year, AirTemp) %>% 
-        mutate(TEMP_ID = 1:n()) ->
+        mutate(TEMP_ID = 1:n()) %>%
+        mutate(across("AirTemp",
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         temp
     saveRDS(temp, file = paste0(DATA_PATH, "processed/temp.RData"))
     ## ----end
@@ -1221,7 +1257,11 @@ FOCAL_RESPS <- var_lookup %>%
                         dplyr::select(Measure, Var) %>%
                         deframe))) %>%
         dplyr::select(Year, AirTemp_anom) %>% 
-        mutate(TEMP_ANOM_ID = 1:n()) ->
+        mutate(TEMP_ANOM_ID = 1:n()) %>%
+        mutate(across("AirTemp_anom",
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         temp_anom
     saveRDS(temp_anom, file = paste0(DATA_PATH, "processed/temp_anom.RData"))
     ## ----end
@@ -1236,7 +1276,11 @@ FOCAL_RESPS <- var_lookup %>%
                         dplyr::select(Measure, Var) %>%
                         deframe))) %>% 
         mutate(SOI_FIN_ID = 1:n(),
-               Year = as.numeric(str_extract(Year, "[0-9]{4}"))) ->
+               Year = as.numeric(str_extract(Year, "[0-9]{4}"))) %>%
+        mutate(across("SOI",
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         SOI_fin
     saveRDS(SOI_fin, file = paste0(DATA_PATH, "processed/SOI_fin.RData"))
     ## ----end
@@ -1251,7 +1295,11 @@ FOCAL_RESPS <- var_lookup %>%
                         dplyr::select(Measure, Var) %>%
                         deframe))) %>%
         dplyr::select(Year, SST_anom) %>% 
-        mutate(SST_ANOM_ID = 1:n()) ->
+        mutate(SST_ANOM_ID = 1:n()) %>%
+        mutate(across("SST_anom",
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         SST_anom
     saveRDS(SST_anom, file = paste0(DATA_PATH, "processed/SST_anom.RData"))
     ## ----end
@@ -1266,7 +1314,11 @@ FOCAL_RESPS <- var_lookup %>%
                         dplyr::select(Measure, Var) %>%
                         deframe))) %>%
         dplyr::select(Year, Building_total, Building_eng, Building_non, Building_res) %>% 
-        mutate(BUILD_ID = 1:n()) ->
+        mutate(BUILD_ID = 1:n()) %>%
+        mutate(across(matches("^Build.*", ignore.case = FALSE),
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         build
     saveRDS(build, file = paste0(DATA_PATH, "processed/build.RData"))
     ## ----end
@@ -1283,7 +1335,11 @@ FOCAL_RESPS <- var_lookup %>%
                         deframe))) %>%
         dplyr::select(Year, Ship_trade, Ship_cont, Ship_liq, Ship_car,
                       Ship_rig, Ship_cruise, Ship_dry, Ship_live) %>% 
-        mutate(SHIP_ID = 1:n()) ->
+        mutate(SHIP_ID = 1:n()) %>%
+        mutate(across(matches("^Ship.*", ignore.case = FALSE),
+                      list(lag1=~lag(.x,1),
+                           lag2=~lag(.x,2)),
+                      .names = "{.col}_{.fn}")) ->
         ship
     saveRDS(ship, file = paste0(DATA_PATH, "processed/ship.RData"))
     ## ----end
@@ -1328,7 +1384,8 @@ FOCAL_RESPS <- var_lookup %>%
         full_join(ship) %>%
         full_join(primary %>% ##slice(1:32) %>%
                   dplyr::select(Year,
-                                TotalN, TotalP, TSS, VSS, Discharge, PRIMARY_SITE_ID = Site,
+                                TotalN, TotalP, TSS, VSS, Discharge,
+                                PRIMARY_SITE_ID = Site,
                                 ZoneName, Catchment, CatchmentNumber, PRIMARY_ID) %>%
                   st_drop_geometry()
                   ) %>%

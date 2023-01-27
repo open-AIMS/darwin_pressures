@@ -160,6 +160,11 @@ file_append <- function(type) {
     )
 }
 ## ----end
+## ---- EDA associations file lag function
+file_lag <- function(lag) {
+    ifelse(is.null(lag), "", paste0(".",lag))
+}
+## ----end
 
 ## ---- EDA associations data prep function
 assoc_data_pred <- function(data, type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
@@ -277,10 +282,12 @@ assoc_data_pred <- function(data, type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURE
 }
 ## ----end
 ## ---- EDA associations dual plots function
-dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
+dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = NULL) {
     set_cores()    
 
     FILE_APPEND <- file_append(type)
+    FILE_LAG <- file_lag(lag)
+    
     for (j in FOCAL_RESPS) {
         cat(j, "\n")
         data.EDA.resp <- readRDS(file = paste0(DATA_PATH,
@@ -295,6 +302,8 @@ dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
             cat("\t",MEASURE, "\n")
             data.EDA.pres <- readRDS(file = paste0(DATA_PATH, "summarised/data.EDA",
                                                    FILE_APPEND,"pres__", MEASURE, ".RData"))
+            if (!is.null(lag)) data.EDA.pres <- data.EDA.pres %>%
+                                   mutate(Year = Year + lag)
 
             g1 <- data.EDA.resp %>% group_by(ZoneName) %>%
                 ## nest() %>%
@@ -379,7 +388,7 @@ dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
                 suppressWarnings()
 
             saveRDS(g1, file = paste0(DATA_PATH, "summarised/dual_plot",
-                                      FILE_APPEND,"__",j,"__",MEASURE,".RData"))
+                                      FILE_APPEND,"__",j,"__",MEASURE, FILE_LAG,".RData"))
             FACETS <- g1 %>% pull(ZoneName) %>% unique %>% length()
             NCOL <- wrap_dims(FACETS, ncol = 3)[2]
             NROW <- wrap_dims(FACETS, ncol = 3)[1]
@@ -387,7 +396,7 @@ dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
                 filter(!is.null(Resp))
             g <-  patchwork::wrap_plots(g1$g, ncol = NCOL) & theme_bw()
             ggsave(filename = paste0(FIGS_PATH, "/EDA_dual_plot",
-                                     FILE_APPEND,"__",j,"__",MEASURE,".png"),
+                                     FILE_APPEND,"__",j,"__",MEASURE, FILE_LAG, ".png"),
                    g,
                    width = 4 * NCOL,
                    height = 3 * NROW,
@@ -399,10 +408,12 @@ dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
 
 ## ----end
 ## ---- EDA associations associations function
-associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
+associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = NULL) {
     set_cores()    
 
     FILE_APPEND <- file_append(type)
+    FILE_LAG <- file_lag(lag)
+
     for (j in FOCAL_RESPS) {
         cat(j, "\n")
         ylab <- units_lookup %>%

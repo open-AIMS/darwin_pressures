@@ -117,6 +117,8 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
                 dplyr::select(Catchment, Year, !!MEASURE, !!ID, !!SITE_ID) %>%
                 distinct() %>%
                 rename(Value = {{MEASURE}}) %>%
+                rename(SITE_ID = {{SITE_ID}}) %>%
+                {if (is.null(SITE_ID)) mutate(., SITE_ID = NA) else .} %>%
                 filter(!is.na(Value)) %>%
                 droplevels()
                 ## mutate(Catchment = forcats::fct_reorder(Catchment, CatchmentNumber))
@@ -143,10 +145,13 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
     ## ----end
     ## ---- EDA Routine dual plots
     dual_plots(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES)
+    dual_plots(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES, lag = 1)
+    dual_plots(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES, lag = 2)
     ## ----end
 
     ## ---- EDA Routine Associations
     associations(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES)
+    associations(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES, lag = 1)
     ## ----end
 }
 
