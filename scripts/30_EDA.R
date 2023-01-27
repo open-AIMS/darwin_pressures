@@ -38,7 +38,8 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
                               ~ EDA(.x, .y)))
         ## ----end
         ## ---- EDA Routine save
-        walk2(.x = data.EDA.routine$name,
+        set_cores_furrr()
+        future_walk2(.x = data.EDA.routine$name,
               .y = data.EDA.routine$EDA,
               ~ggsave(filename = paste0(FIGS_PATH, '/EDA_routine_',.x, '.png'),
                       .y,
@@ -76,7 +77,8 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
                               ~ EDA(.x, .y)))
         ## ----end
         ## ---- EDA save
-        walk2(.x = data.EDA$name,
+        set_cores_furrr()
+        future_walk2(.x = data.EDA$name,
               .y = data.EDA$EDA,
               ~ggsave(filename = paste0(FIGS_PATH, '/EDA_',.x, '.png'),
                       .y,
@@ -92,7 +94,9 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
     ## Pressures
     {
         ## ---- EDA pressures
-        for (i in 1:nrow(FOCAL_PRESSURES)) {
+        set_cores()
+        ## for (i in 1:nrow(FOCAL_PRESSURES)) {
+        foreach (i = 1:nrow(FOCAL_PRESSURES)) %dopar% {
             MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
             ID <- FOCAL_PRESSURES[i, "ID"][[1]]
             SITE_ID <- FOCAL_PRESSURES[i, "SITE_ID"][[1]]

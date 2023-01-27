@@ -11,6 +11,7 @@ library(sf)
 library(ggsflabel)
 library(foreach)
 library(doParallel)
+library(furrr)
 sf_use_s2(FALSE)
 ## ----end
 
@@ -35,6 +36,16 @@ set_cores <- function() {
         registerDoParallel(cores=4)
     } else {
         registerDoParallel(cores=20)
+    }
+}
+## ----end
+
+## ---- set up cores furrr function
+set_cores_furrr <- function() {
+    if (availableCores() < 9) {
+        plan(multicore, workers = 4)
+    } else {
+        plan(multicore, workers = 20)
     }
 }
 ## ----end
@@ -162,6 +173,8 @@ assoc_data_pred <- function(data, type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURE
         pull(Date) %>% range()
 
     FILE_APPEND <- file_append(type)
+
+    set_cores()
     
     for (j in FOCAL_RESPS) {
         lab <- units_lookup %>%
@@ -190,7 +203,8 @@ assoc_data_pred <- function(data, type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURE
                 file = paste0(DATA_PATH, "summarised/data.EDA",
                               FILE_APPEND,"resp__", j, ".RData"))
 
-        for (i in 1:nrow(FOCAL_PRESSURES)) {
+        ## for (i in 1:nrow(FOCAL_PRESSURES)) {
+        foreach(i = 1:nrow(FOCAL_PRESSURES)) %dopar% {
             MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
             ID <- FOCAL_PRESSURES[i, "ID"][[1]]
             SITE_ID <- FOCAL_PRESSURES[i, "SITE_ID"][[1]]
@@ -369,6 +383,8 @@ dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES) {
             FACETS <- g1 %>% pull(ZoneName) %>% unique %>% length()
             NCOL <- wrap_dims(FACETS, ncol = 3)[2]
             NROW <- wrap_dims(FACETS, ncol = 3)[1]
+            g1 <- g1 %>% rowwise() %>%
+                filter(!is.null(Resp))
             g <-  patchwork::wrap_plots(g1$g, ncol = NCOL) & theme_bw()
             ggsave(filename = paste0(FIGS_PATH, "/EDA_dual_plot",
                                      FILE_APPEND,"__",j,"__",MEASURE,".png"),
@@ -623,6 +639,7 @@ predSimpleGAM_pres <- function(d, mod) {
 dual_plot <- function(dat.resp = NULL, dat.pres = NULL,
                       dat.resp.smooth = NULL, dat.pres.smooth = NULL,
                       DATE_RANGE) {
+    if (is.null(dat.resp)) return(NULL)
     ## br <- pretty(c(dat.resp$lMin, dat.resp$lMax))
     br <- scales::rescale(pretty(c(dat.resp$Min, dat.resp$Max)),
                           to = c(1,100),
