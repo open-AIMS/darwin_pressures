@@ -489,7 +489,12 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
             data.EDA.mod <- data.EDA %>%
                 mutate(DV = !!sym(MEASURE_)) %>%
                 filter(!is.na(DV)) %>%
+                ## Add a Whole Harbour Group
                 { if (max(.$DV) > 1e5) mutate(.,DV = DV/1e5) else . } %>%
+                {
+                    x <- .
+                    rbind(x, x %>% mutate(Zone = NA, ZoneName = "Whole Hbour"))
+                } %>%
                 group_by(Zone, ZoneName) %>%
                 summarise(data = list(cur_data_all()), .groups = "drop") %>%
                 mutate(Mod = map(.x = data,
@@ -742,135 +747,145 @@ dual_plot <- function(dat.resp = NULL, dat.pres = NULL,
 ## ----end
 
 ## ---- EDA associations fitModels function
+
+checkModel <- function(mod) {
+    if(any(class(mod) == 'try-error')) {return('Bad')}
+    summ <- try(summary(mod))
+    if (any(class(summ) == 'try-error')) {return('Bad')}
+    if (is.na(AIC(mod))) {return('Bad')}
+    return('Good')
+}
+
+polyModel <- function(dat, type) {
+    model <- NULL
+    dat <- dat %>% group_by(WQ_SITE) %>%
+        mutate(DV1 = lag(DV))
+    if (type == "Routine") {
+        if (length(unique(dat$Year)) > 4) {
+            form <- Value ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE)
+            form2 <- Value ~ poly(DV,3) + (1|WQ_SITE)
+        }else {
+            form <- Value ~ poly(DV,3) + (1|WQ_SITE)
+        }
+    } else {
+        form <- Value ~ poly(DV,3)
+    }
+    ## Try full autocorrelation model
+    mod <- try(glmmTMB::glmmTMB(form,
+                                data = dat,
+                                ## family = glmmTMB::tweedie(link = "log")
+                                family = Gamma(link = "log"),
+                                REML = TRUE
+                                ) %>%
+               suppressMessages() %>%
+               suppressWarnings(),
+               silent = TRUE)
+    ## if that was bad, try dropping the autocorrelation term
+    if (checkModel(mod) == 'Bad') {
+        mod <- try(glmmTMB::glmmTMB(form2,
+                                    data = dat,
+                                    family = Gamma(link = "log"),
+                                    REML = TRUE
+                                    ) %>%
+                   suppressMessages() %>%
+                   suppressWarnings(),
+                   silent = TRUE)
+        if (checkModel(mod) == 'Bad') return(NULL)
+    }
+    return(mod)
+}
+
+glmmModel <- function(dat, type, REML = TRUE) {
+    dat <- dat %>% group_by(WQ_SITE) %>%
+        mutate(DV1 = lag(DV))
+    if (type == "Routine") {
+        if (length(unique(dat$Year)) > 4){
+            form <- Value ~ DV + (1|WQ_SITE) + ar1(factor(Year)-1|WQ_SITE)
+            form2 <- Value ~ DV + (1|WQ_SITE)
+        } else {
+            form <- Value ~ DV + (1|WQ_SITE)
+        }
+    } else {
+        form <- Value ~ DV
+    }
+    ## Try full autocorrelation model
+    mod <- try(glmmTMB::glmmTMB(form,
+                                data = dat,
+                                family = Gamma(link = "log"),
+                                REML = REML
+                                ) %>%
+               suppressMessages() %>%
+               suppressWarnings(),
+               silent = TRUE)
+    ## if that was bad, try dropping the autocorrelation term
+    if (checkModel(mod) == 'Bad') {
+        mod <- try(glmmTMB::glmmTMB(form2,
+                                    data = dat,
+                                    family = Gamma(link = "log"),
+                                    REML = REML
+                                    ) %>%
+                   suppressMessages() %>%
+                   suppressWarnings(),
+                   silent = TRUE)
+        if (checkModel(mod) == 'Bad') return(NULL)
+    }
+    return(mod)
+}
+
+gamModel <- function(dat, type) {
+    dat <- dat %>% group_by(WQ_SITE) %>%
+        mutate(DV1 = lag(DV))
+    k = min(10, length(unique(dat$DV))-2)
+    if (type == "Routine") {
+        form <- Value ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're')
+    } else {
+        form <- Value ~ s(DV, bs = 'ps', k = k) + Year
+    }
+    mod <- mgcv::gam(form,
+                     data = dat,
+                     ## family = glmmTMB::tweedie(link = "log")
+                     family = Gamma(link = "log"),
+                     method = 'REML'
+                     ) %>% 
+        suppressMessages() %>%
+        suppressWarnings()
+    ## summary(mod)
+    mod
+}
+
 fitModels <- function(dat, type) {
     dat %>% droplevels() %>% pull(ZoneName) %>% unique %>% print
     dat <- dat %>% mutate(Value = ifelse(Value == 0, 0.05, Value))
     mods <- list()
 
-    checkModel <- function(mod) {
-        if(any(class(mod) == 'try-error')) {return('Bad')}
-        summ <- try(summary(mod))
-        if (any(class(summ) == 'try-error')) {return('Bad')}
-        if (is.na(AIC(mod))) {return('Bad')}
-        return('Good')
-    }
 
-    polyModel <- function(dat, type) {
-        model <- NULL
-        dat <- dat %>% group_by(WQ_SITE) %>%
-            mutate(DV1 = lag(DV))
-        if (type == "Routine") {
-            if (length(unique(dat$Year)) > 4) {
-                form <- Value ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE)
-                form2 <- Value ~ poly(DV,3) + (1|WQ_SITE)
-            }else {
-                form <- Value ~ poly(DV,3) + (1|WQ_SITE)
-            }
-        } else {
-            form <- Value ~ poly(DV,3)
-        }
-        ## Try full autocorrelation model
-        mod <- try(glmmTMB::glmmTMB(form,
-                                    data = dat,
-                                    ## family = glmmTMB::tweedie(link = "log")
-                                    family = Gamma(link = "log"),
-                                    REML = TRUE
-                                    ) %>%
-                   suppressMessages() %>%
-                   suppressWarnings(),
-                   silent = TRUE)
-        ## if that was bad, try dropping the autocorrelation term
-        if (checkModel(mod) == 'Bad') {
-            mod <- try(glmmTMB::glmmTMB(form2,
-                                        data = dat,
-                                        family = Gamma(link = "log"),
-                                        REML = TRUE
-                                        ) %>%
-                       suppressMessages() %>%
-                       suppressWarnings(),
-                       silent = TRUE)
-            if (checkModel(mod) == 'Bad') return(NULL)
-        }
-        return(mod)
-    }
-    glmmModel <- function(dat, REML = TRUE) {
-        dat <- dat %>% group_by(WQ_SITE) %>%
-            mutate(DV1 = lag(DV))
-        if (type == "Routine") {
-            if (length(unique(dat$Year)) > 4){
-                form <- Value ~ DV + (1|WQ_SITE) + ar1(factor(Year)-1|WQ_SITE)
-                form2 <- Value ~ DV + (1|WQ_SITE)
-            } else {
-                form <- Value ~ DV + (1|WQ_SITE)
-            }
-        } else {
-            form <- Value ~ DV
-        }
-        ## Try full autocorrelation model
-        mod <- try(glmmTMB::glmmTMB(form,
-                                    data = dat,
-                                    family = Gamma(link = "log"),
-                                    REML = TRUE
-                                    ) %>%
-                   suppressMessages() %>%
-                   suppressWarnings(),
-                   silent = TRUE)
-        ## if that was bad, try dropping the autocorrelation term
-        if (checkModel(mod) == 'Bad') {
-            mod <- try(glmmTMB::glmmTMB(form2,
-                                        data = dat,
-                                        family = Gamma(link = "log"),
-                                        REML = TRUE
-                                        ) %>%
-                       suppressMessages() %>%
-                       suppressWarnings(),
-                       silent = TRUE)
-            if (checkModel(mod) == 'Bad') return(NULL)
-        }
-        return(mod)
-    }
-    gamModel <- function(dat) {
-        dat <- dat %>% group_by(WQ_SITE) %>%
-            mutate(DV1 = lag(DV))
-        k = min(10, length(unique(dat$DV))-2)
-        if (type == "Routine") {
-            form <- Value ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're')
-        } else {
-            form <- Value ~ s(DV, bs = 'ps', k = k) + Year
-        }
-        mod <- mgcv::gam(form,
-                         data = dat,
-                         ## family = glmmTMB::tweedie(link = "log")
-                         family = Gamma(link = "log"),
-                         method = 'REML'
-                         ) %>% 
-            suppressMessages() %>%
-            suppressWarnings()
-        ## summary(mod)
-        mod
-    }
     ## start with poly
     if (length(unique(dat$DV))>4) {
-        mod.poly <- try(polyModel(dat), silent = TRUE)
-        if (class(mod.poly) == "try-error") mod.poly <- NULL
+        mod.poly <- polyModel(dat, type)
+        ## if (is.null(mod.poly)) mod.poly <- NULL
     } else { 
-        mod.poly <- try(glmmModel(dat), silent = TRUE)
-        if (class(mod.poly) == "try-error") mod.poly <- NULL
+        mod.poly <- glmmModel(dat, type)
+        ## if (class(mod.poly) == "try-error") mod.poly <- NULL
     }
     if(!is.null(mod.poly)) mods[[length(mods) + 1]] <- mod.poly
+    
     ## linear model
-    mod.lin <- try(glmmModel(dat), silent = TRUE)
-    if (class(mod.lin) == "try-error") mod.lin <- try(glmmMod(dat, REML = FALSE), silent = TRUE)
-    if (class(mod.lin) == "try-error") mod.lin <- try(glmmTMB::glmmTMB(Value ~ DV, data = dat, family = Gamma(link = 'log')), silent = TRUE)
+    mod.lin <- glmmModel(dat, type)
+    ## if (class(mod.lin) == "try-error")
+    if (is.null(mod.lin))
+        mod.lin <- glmmModel(dat, type = type, REML = FALSE)
+    if (is.null(mod.lin))
+        mod.lin <- try(glmmTMB::glmmTMB(Value ~ DV, data = dat, family = Gamma(link = 'log')), silent = TRUE)
     if (class(mod.lin) == "try-error") mod.lin <- NULL
     if(!is.null(mod.lin)) mods[[length(mods) + 1]] <- mod.lin
-    ## gam modelr
+    
+    ## gam model
     if (length(unique(dat$DV))>4) {
-        mod.gam <- try(gamModel(dat), silent = TRUE)
+        mod.gam <- try(gamModel(dat, type), silent = TRUE)
         if (any(class(mod.gam) == "try-error")) mod.gam <- NULL
     } else { 
-        mod.gam <- try(glmmModel(dat), silent = TRUE)
-        if (class(mod.gam) == "try-error") {
+        mod.gam <- glmmModel(dat, type)
+        if (is.null(mod.gam)) {
             k = min(10, length(unique(dat$DV)))
             mod.gam <- try(mgcv::gam(Value ~ s(DV, bs = 'ps', k = k),# + s(WQ_SITE, bs = 're'),
                              data = dat,
