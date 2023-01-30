@@ -120,6 +120,7 @@ RUN R -e "options(repos = \
   install.packages('broom.mixed'); \ 
   install.packages('mgcViz'); \ 
   install.packages('gridGraphics'); \ 
+  install.packages('kableExtra'); \ 
 " 
 ## Create project directory in docker image 
 RUN mkdir /home/Project

@@ -493,7 +493,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 { if (max(.$DV) > 1e5) mutate(.,DV = DV/1e5) else . } %>%
                 {
                     x <- .
-                    rbind(x, x %>% mutate(Zone = NA, ZoneName = "Whole Hbour"))
+                    rbind(x, x %>% mutate(Zone = "", ZoneName = "Whole Hbour"))
                 } %>%
                 group_by(Zone, ZoneName) %>%
                 summarise(data = list(cur_data_all()), .groups = "drop") %>%
@@ -554,6 +554,11 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                        ) %>%
                 suppressMessages() %>%
                 suppressWarnings()
+
+            FACETS <- data.EDA.mod %>% pull(ZoneName) %>% unique %>% length()
+            NCOL <- wrap_dims(FACETS, ncol = 3)[2]
+            NROW <- wrap_dims(FACETS, ncol = 3)[1]
+
             saveRDS(data.EDA.mod %>% dplyr::select(Zone, ZoneName, Mod),
                     file = paste0(DATA_PATH,"summarised/data.EDA",
                                   FILE_APPEND,"mod__",j,"__",MEASURE_,".RData"))
