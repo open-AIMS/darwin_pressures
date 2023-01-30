@@ -165,6 +165,8 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
 
     ## ---- EDA dual plots
     dual_plots(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES)
+    dual_plots(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 1)
+    dual_plots(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 2)
     ## ----end
 
     ## ---- EDA Associations
