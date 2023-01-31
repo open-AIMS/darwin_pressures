@@ -686,10 +686,13 @@ FOCAL_RESPS <- var_lookup %>%
         mutate(across(c(Site, ZoneName, Catchment),
                       ~forcats::fct_reorder(.x, CatchmentNumber))) %>%
         mutate(PRIMARY_ID = 1:n()) %>%
+        arrange(ZoneName, Site, Year) %>% 
+        group_by(ZoneName, Site) %>%
         mutate(across(c(TotalP, TotalN, TSS, VSS, Discharge),
                       list(lag1=~lag(.x,1),
                            lag2=~lag(.x,2)),
-                      .names = "{.col}_{.fn}")) ->
+                      .names = "{.col}_{.fn}")) %>%
+        ungroup() ->
         ## left_join(spatial_lookup_primary %>%
         ##           dplyr::select(-Latitude, -Longitude) %>%
         ##           distinct) ->
@@ -866,10 +869,13 @@ FOCAL_RESPS <- var_lookup %>%
         mutate(across(c(ZoneName, Catchment),
                       ~forcats::fct_reorder(.x, CatchmentNumber))) %>% 
         mutate(CATCHMENT_ERP_ID = 1:n()) %>%
+        arrange(ZoneName, Catchment, Year) %>%
+        group_by(ZoneName, Catchment) %>%
         mutate(across(c(Catch_ERP, POP),
                       list(lag1=~lag(.x,1),
                            lag2=~lag(.x,2)),
-                      .names = "{.col}_{.fn}")) ->
+                      .names = "{.col}_{.fn}")) %>%
+        ungroup() ->
         catchment_erp
     saveRDS(catchment_erp, file = paste0(DATA_PATH, "processed/catchment_erp.RData"))
     ## ----end
@@ -1011,10 +1017,13 @@ FOCAL_RESPS <- var_lookup %>%
         left_join(spatial_subcatchments_lookup %>%
                   dplyr::select(Catchment, ZoneName)) %>% 
         mutate(FIRE_FREQ_ID = 1:n()) %>% 
+        arrange(ZoneName, Catchment, Year) %>%
+        group_by(ZoneName, Catchment) %>%
         mutate(across(matches("^Fire_TotalKm.*", ignore.case = FALSE),
                       list(lag1=~lag(.x,1),
                            lag2=~lag(.x,2)),
-                      .names = "{.col}_{.fn}")) ->
+                      .names = "{.col}_{.fn}")) %>%
+        ungroup() ->
         fire_freq
     saveRDS(fire_freq, file = paste0(DATA_PATH, "processed/fire_freq.RData"))
     ## ----end
@@ -1088,7 +1097,8 @@ FOCAL_RESPS <- var_lookup %>%
         left_join(spatial_lookup_fire_areas) %>%
         dplyr::select(Catchment, everything(), -`Catchment Name`) %>%
         left_join(spatial_subcatchments_lookup %>% dplyr::select(Catchment, ZoneName)) %>% 
-        mutate(Year = as.numeric(Year)) -> fire_areas
+        mutate(Year = as.numeric(Year)) ->
+        fire_areas
     ## ----end
     ## Percentages
     ## ---- process data fire areas percentage
@@ -1109,10 +1119,13 @@ FOCAL_RESPS <- var_lookup %>%
     fire_areas %>%
         full_join(fire_areas_p) %>% 
         mutate(FIRE_AREAS_ID = 1:n()) %>%
+        arrange(ZoneName, Catchment, Year) %>%
+        group_by(ZoneName, Catchment) %>%
         mutate(across(matches("^Fire_Areas.*", ignore.case = FALSE),
                       list(lag1=~lag(.x,1),
                            lag2=~lag(.x,2)),
-                      .names = "{.col}_{.fn}")) ->
+                      .names = "{.col}_{.fn}")) %>%
+        ungroup() ->
         fire_areas
     saveRDS(fire_areas, file = paste0(DATA_PATH, "processed/fire_areas.RData"))
     ## ----end
@@ -1382,6 +1395,7 @@ FOCAL_RESPS <- var_lookup %>%
         full_join(SST_anom) %>% 
         full_join(build) %>%
         full_join(ship) %>%
+        full_join(fire_freq) %>% 
         full_join(primary %>% ##slice(1:32) %>%
                   dplyr::select(Year,
                                 TotalN, TotalP, TSS, VSS, Discharge,
@@ -1400,7 +1414,6 @@ FOCAL_RESPS <- var_lookup %>%
                                 CatchmentNumber,
                                 ZoneName, CATCHMENT_ERP_ID) %>%
                   mutate(Year = as.numeric(as.character(Year)))) %>%
-        full_join(fire_freq) %>% 
         full_join(fire_areas) 
     saveRDS(data, file = paste0(DATA_PATH, "processed/data.RData"))
     ## ----end

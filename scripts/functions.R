@@ -233,29 +233,38 @@ assoc_data_pred <- function(data, type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURE
                                   FILE_APPEND,"__", j, "__", MEASURE,".RData"))
             ## Save dual plot data
             if (j == FOCAL_RESPS[1]) {
-                data.EDA.pres <-
-                    data %>%
-                    filter(!is.na(!!sym(MEASURE))) %>%
-                    dplyr::select(Catchment, ZoneName, Zone, Year, !!MEASURE, !!ID, !!SITE_ID) %>%
-                    distinct() %>%
-                    mutate(Value = !!sym(MEASURE)) %>%
-                    filter(!is.na(Value)) %>%
-                    mutate(Date = as.Date(paste0(Year, "-01-01")),
-                           Measure = MEASURE) %>%
-                    group_by(ZoneName) %>%
-                    mutate(Min = min(Value, na.rm = TRUE),
-                           Max = max(Value, na.rm = TRUE),
-                           sValue = scales::rescale(Value,
-                                                    from = c(unique(Min), unique(Max)),
-                                                    to = c(1, 100))) %>%
-                    ungroup() %>%
-                    dplyr::select(-Zone) %>%
-                    left_join(spatial_lookup %>% dplyr::select(Zone, ZoneName)) %>%
-                    suppressMessages()
+                for (LAGS in  0:2) {
+                    if (LAGS == 0) {
+                        LAG_MEASURE <- MEASURE
+                    } else {
+                        LAG_MEASURE <- paste0(MEASURE,"_lag", LAGS)
+                    }
+                    data.EDA.pres <-
+                        data %>%
+                        filter(!is.na(!!sym(LAG_MEASURE))) %>%
+                        dplyr::select(Catchment, ZoneName, Zone, Year,
+                                      !!LAG_MEASURE, !!ID, !!SITE_ID) %>%
+                        distinct() %>%
+                        mutate(Value = !!sym(LAG_MEASURE)) %>%
+                        filter(!is.na(Value)) %>%
+                        mutate(Date = as.Date(paste0(Year, "-01-01")),
+                               Measure = MEASURE,
+                               Lag = LAGS) %>%
+                        group_by(ZoneName) %>%
+                        mutate(Min = min(Value, na.rm = TRUE),
+                               Max = max(Value, na.rm = TRUE),
+                               sValue = scales::rescale(Value,
+                                                        from = c(unique(Min), unique(Max)),
+                                                        to = c(1, 100))) %>%
+                        ungroup() %>%
+                        dplyr::select(-Zone) %>%
+                        left_join(spatial_lookup %>% dplyr::select(Zone, ZoneName)) %>%
+                        suppressMessages()
 
-                saveRDS(data.EDA.pres,
-                        file = paste0(DATA_PATH, "summarised/data.EDA",
-                                      FILE_APPEND,"pres__", MEASURE, ".RData"))
+                    saveRDS(data.EDA.pres,
+                            file = paste0(DATA_PATH, "summarised/data.EDA",
+                                          FILE_APPEND,"pres__", MEASURE, "_lag", LAGS, ".RData"))
+                }
             }
 
             ## Save associations data
@@ -290,6 +299,12 @@ dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = NU
 
     FILE_APPEND <- file_append(type)
     FILE_LAG <- file_lag(lag)
+
+    if (is.null(lag)) {
+        LAGS <- 0
+    } else {
+        LAGS = lag
+    }
     
     for (j in FOCAL_RESPS) {
         cat(j, "\n")
@@ -303,10 +318,11 @@ dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = NU
                                        FILE_APPEND,"__", j, "__", MEASURE,".RData"))
             list2env(settings, envir = globalenv())
             cat("\t",MEASURE, "\n")
+
             data.EDA.pres <- readRDS(file = paste0(DATA_PATH, "summarised/data.EDA",
-                                                   FILE_APPEND,"pres__", MEASURE, ".RData"))
-            if (!is.null(lag)) data.EDA.pres <- data.EDA.pres %>%
-                                   mutate(Year = Year + lag)
+                                                   FILE_APPEND,"pres__", MEASURE, "_lag", LAGS, ".RData"))
+            ## if (!is.null(lag)) data.EDA.pres <- data.EDA.pres %>%
+            ##                        mutate(Year = Year + lag)
 
             g1 <- data.EDA.resp %>% group_by(ZoneName) %>%
                 ## nest() %>%
@@ -493,7 +509,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 { if (max(.$DV) > 1e5) mutate(.,DV = DV/1e5) else . } %>%
                 {
                     x <- .
-                    rbind(x, x %>% mutate(Zone = "", ZoneName = "Whole Hbour"))
+                    rbind(x, x %>% mutate(Zone = "", ZoneName = "Whole Harbour"))
                 } %>%
                 group_by(Zone, ZoneName) %>%
                 summarise(data = list(cur_data_all()), .groups = "drop") %>%

@@ -417,6 +417,10 @@ var_lookup <- tribble(
     "Shipping",        "Livestock",                "Pressure",    "Ship_live",     "SHIP_ID", NA,  NA,
     "Shipping",        "Cruise ships",             "Pressure",    "Ship_cruise",   "SHIP_ID", NA,  NA,
     "Shipping",        "Dry bulk",                 "Pressure",    "Ship_dry",      "SHIP_ID", NA,  NA,
+    "Fire Freq",       "Fire_TotalKm_WA",             "Pressure",    "Fire_TotalKm_WA",  "FIRE_FREQ_ID", NA,  "Catchment",
+    "Fire Freq",       "Fire_TotalKm_STD",             "Pressure",    "Fire_TotalKm_STD",  "FIRE_FREQ_ID", NA,  "Catchment",
+    "Fire Areas",      "Fire_Areas",               "Pressure",    "Fire_Areas",    "FIRE_AREAS_ID", NA,  "Catchment",
+    "Fire Areas",      "Fire_Areas_p",               "Pressure",    "Fire_Areas_p",    "FIRE_AREAS_ID", NA,  "Catchment",
    ) 
 saveRDS(var_lookup, file = paste0(DATA_PATH, "processed/var_lookup.RData"))
 ## ----end
