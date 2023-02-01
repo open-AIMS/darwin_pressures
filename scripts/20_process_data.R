@@ -1395,7 +1395,6 @@ FOCAL_RESPS <- var_lookup %>%
         full_join(SST_anom) %>% 
         full_join(build) %>%
         full_join(ship) %>%
-        full_join(fire_freq) %>% 
         full_join(primary %>% ##slice(1:32) %>%
                   dplyr::select(Year,
                                 TotalN, TotalP, TSS, VSS, Discharge,
@@ -1414,9 +1413,13 @@ FOCAL_RESPS <- var_lookup %>%
                                 CatchmentNumber,
                                 ZoneName, CATCHMENT_ERP_ID) %>%
                   mutate(Year = as.numeric(as.character(Year)))) %>%
+        full_join(fire_freq) %>% 
         full_join(fire_areas) 
     saveRDS(data, file = paste0(DATA_PATH, "processed/data.RData"))
     ## ----end
     cat("Combine all data processed\n\n")
 }
 
+## Tests
+## data %>%
+##     dplyr::select(ZoneName, Year, Ship_trade, SHIP_ID)

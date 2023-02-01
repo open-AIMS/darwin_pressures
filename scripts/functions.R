@@ -426,6 +426,73 @@ dual_plots <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = NU
 }
 
 ## ----end
+## ---- EDA associations modelled_settings_prior function
+modelled_settings_prior <- function(MEASURE, lag, units_lookup) {
+    if (!is.null(lag)) {
+        MEASURE_ <- paste0(MEASURE,"_lag",lag)
+        LAB_LAG <- paste0("Lag (",lag,"yr) ")
+    } else {
+        MEASURE_ <- MEASURE
+        LAB_LAG <- ""
+    }
+    xlab <- units_lookup %>%
+        filter(Measure == {{MEASURE}}) %>% 
+        pull(TableLabel) %>%
+        paste0(LAB_LAG, .)
+    list(
+        MEASURE = MEASURE,
+        MEASURE_ = MEASURE_,
+        LAB_LAG = LAB_LAG,
+        xlab = xlab,
+        lag = lag)
+}
+## ----end
+
+## ---- EDA associations simple_gam function
+## This function is applied to the response vs pressure data
+simple_gam <- function(data.EDA, MEASURE_, ylab, xlab, FILE_APPEND, FILE_LAG) {
+    g <- data.EDA %>%
+        ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
+        ## geom_point() +
+        geom_text(aes(label = as.numeric(factor(Year)))) +
+        ## geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+        ##             method.args = list(method = "REML",
+        ##                                family = Gamma(link = 'log'))) +
+        ## scale_y_continuous(trans = scales::pseudo_log_trans()) 
+        geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+                    method.args = list(method = "REML",
+                                       family = gaussian()),
+                    color = "blue",
+                    fill = "#0000FF50") +
+        ## scale_y_log10(scales::label_parse()(lab)) +
+        ## scale_x_continuous(scales::label_parse()(xlab)) +
+        scale_y_log10(ylab) +
+        scale_x_continuous(xlab) +
+        theme_bw() +
+        theme(strip.text.y = element_text(angle = 0),
+              strip.background = element_rect(fill = "#446e9b50"),
+              panel.spacing.x = unit("0.5", "cm"))
+    FACETS <- data.EDA %>% pull(ZoneName) %>% unique %>% length()
+    NCOL <- wrap_dims(FACETS, ncol = 3)[2]
+    NROW <- wrap_dims(FACETS, ncol = 3)[1]
+
+    p <- patchwork::wrap_plots( 
+                        g + facet_wrap(~ZoneName, scales='free', ncol = 3),
+                        g,
+                        ncol = 1,
+                        heights = c(2*NROW, 2*2)
+                    )
+    ggsave(filename = paste0(FIGS_PATH, "/gamPlots",
+                             FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png"),
+           p,
+           width = NCOL * 4,
+           height = NROW * 4,
+           dpi = 72) %>%
+        suppressMessages() %>%
+        suppressWarnings()
+}
+## ----end
+
 ## ---- EDA associations associations function
 associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = NULL) {
     set_cores()    
@@ -447,59 +514,56 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
             settings <- readRDS(paste0(DATA_PATH, "summarised/settings",
                                        FILE_APPEND,"__", j, "__", MEASURE,".RData"))
             list2env(settings, envir = globalenv())
-            if (!is.null(lag)) {
-                MEASURE_ <- paste0(MEASURE,"_lag",lag)
-                LAB_LAG <- paste0("Lag (",lag,"yr) ")
-            } else {
-                MEASURE_ <- MEASURE
-                LAB_LAG <- ""
-            }
-            cat("\t",paste(j, ": ", MEASURE), "\n")
-            xlab <- units_lookup %>%
-                filter(Measure == {{MEASURE}}) %>% 
-                pull(TableLabel) %>%
-                paste0(LAB_LAG, .)
+            MODELLED_SETTINGS <- modelled_settings_prior(MEASURE, lag, units_lookup)
+            list2env(MODELLED_SETTINGS, envir = globalenv())
+
+            cat("\t",paste(j, ": ", MEASURE_, "(", MEASURE, ")"), "\n")
+
             data.EDA <- readRDS(file = paste0(DATA_PATH, "summarised/data.EDA",
                                               FILE_APPEND,"__", j, "__", MEASURE, ".RData"))
                 ## mutate(Value = ifelse(Value==0, 0.001, Value)) %>%
-            g <- data.EDA %>%
-                ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
-                geom_point() +
-                ## geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
-                ##             method.args = list(method = "REML",
-                ##                                family = Gamma(link = 'log'))) +
-                ## scale_y_continuous(trans = scales::pseudo_log_trans()) 
-                geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
-                            method.args = list(method = "REML",
-                                               family = gaussian()),
-                            color = "blue",
-                            fill = "#0000FF50") +
-                ## scale_y_log10(scales::label_parse()(lab)) +
-                ## scale_x_continuous(scales::label_parse()(xlab)) +
-                scale_y_log10(ylab) +
-                scale_x_continuous(xlab) +
-                theme_bw() +
-                theme(strip.text.y = element_text(angle = 0),
-                      strip.background = element_rect(fill = "#446e9b50"),
-                      panel.spacing.x = unit("0.5", "cm"))
-            FACETS <- data.EDA %>% pull(ZoneName) %>% unique %>% length()
-            NCOL <- wrap_dims(FACETS, ncol = 3)[2]
-            NROW <- wrap_dims(FACETS, ncol = 3)[1]
+            ## Simple set of gams relating response and pressure (at give lag)
+            ## output to: paste0(FIGS_PATH, "/gamPlots", FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png")
+            simple_gam(data.EDA, MEASURE_, ylab, xlab, FILE_APPEND, FILE_LAG) 
 
-            p <- patchwork::wrap_plots( 
-                          g + facet_wrap(~ZoneName, scales='free', ncol = 3),
-                          g,
-                          ncol = 1,
-                          heights = c(2*NROW, 2*2)
-                          )
-            ggsave(filename = paste0(FIGS_PATH, "/gamPlots",
-                                     FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png"),
-                   p,
-                   width = NCOL * 4,
-                   height = NROW * 4,
-                   dpi = 72) %>%
-                suppressMessages() %>%
-                suppressWarnings()
+            ## g <- data.EDA %>%
+            ##     ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
+            ##     geom_point() +
+            ##     ## geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+            ##     ##             method.args = list(method = "REML",
+            ##     ##                                family = Gamma(link = 'log'))) +
+            ##     ## scale_y_continuous(trans = scales::pseudo_log_trans()) 
+            ##     geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+            ##                 method.args = list(method = "REML",
+            ##                                    family = gaussian()),
+            ##                 color = "blue",
+            ##                 fill = "#0000FF50") +
+            ##     ## scale_y_log10(scales::label_parse()(lab)) +
+            ##     ## scale_x_continuous(scales::label_parse()(xlab)) +
+            ##     scale_y_log10(ylab) +
+            ##     scale_x_continuous(xlab) +
+            ##     theme_bw() +
+            ##     theme(strip.text.y = element_text(angle = 0),
+            ##           strip.background = element_rect(fill = "#446e9b50"),
+            ##           panel.spacing.x = unit("0.5", "cm"))
+            ## FACETS <- data.EDA %>% pull(ZoneName) %>% unique %>% length()
+            ## NCOL <- wrap_dims(FACETS, ncol = 3)[2]
+            ## NROW <- wrap_dims(FACETS, ncol = 3)[1]
+
+            ## p <- patchwork::wrap_plots( 
+            ##               g + facet_wrap(~ZoneName, scales='free', ncol = 3),
+            ##               g,
+            ##               ncol = 1,
+            ##               heights = c(2*NROW, 2*2)
+            ##               )
+            ## ggsave(filename = paste0(FIGS_PATH, "/gamPlots",
+            ##                          FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png"),
+            ##        p,
+            ##        width = NCOL * 4,
+            ##        height = NROW * 4,
+            ##        dpi = 72) %>%
+            ##     suppressMessages() %>%
+            ##     suppressWarnings()
 
             ## Fit models
             data.EDA.mod <- data.EDA %>%
@@ -513,29 +577,51 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 } %>%
                 group_by(Zone, ZoneName) %>%
                 summarise(data = list(cur_data_all()), .groups = "drop") %>%
-                mutate(Mod = map(.x = data,
-                                 .f = ~fitModels(.x, type)),
+                mutate(Mod_info = map(.x = data,
+                                      .f = ~fitModels(.x, type, MODELLED_SETTINGS) %>%
+                                      suppressWarnings()),
+                       Mod = map(.x = Mod_info,
+                                 .f = ~.x$mod),
                        ## ModLin = map(.x = data,
                        ##           .f = ~fitModel(.x, type = 'linear')),
                        ## GAM = map(.x = data,
                        ##           .f = ~fitModelGAM(.x)),
                        Sum = map(.x = Mod,
-                                 .f = ~ {if(!is.null(.x))
-                                             summary(.x)
-                                         else NULL}),
+                                 .f = ~ {if(!is.null(.x)) {
+                                             tr <- try(summary(.x), silent = TRUE)
+                                             if (any(class(tr) == 'try-error')) return(NULL)
+                                             tr
+                                         } else NULL}),
                        Params = map(.x = Mod,
-                                    .f = ~ {if(!is.null(.x))
-                                                parameters::model_parameters(.x)
-                                            else NULL}),
-                       Params2 = map(.x = Mod,
                                     .f = ~ {if(!is.null(.x)) {
-                                                tdy <- try(broom.mixed::tidy(.x, conf.int = TRUE),
-                                                           silent = TRUE)
-                                                if (any(class(tdy) == 'try-error'))
-                                                    tdy <- broom.mixed::tidy(.x, conf.int = TRUE,
-                                                                             effects='fixed')
-                                                tdy
-                                            } else NULL}),
+                                                tr <- try(parameters::model_parameters(.x), silent = TRUE)
+                                                if (any(class(tr) == 'try-error')) return(NULL)
+                                                tr
+                                           } else NULL}),
+                       Params2 = map(.x = Mod,
+                                     .f = ~ {
+                                         tdy <- try(broom.mixed::tidy(.x, conf.int = TRUE),
+                                                    silent = TRUE)
+                                         if (any(class(tdy) == 'try-error'))
+                                             tdy <- try(broom.mixed::tidy(.x, conf.int = TRUE,
+                                                                      effects='fixed'), silent = TRUE)
+                                         if (any(class(tdy) == 'try-error'))
+                                             tdy <- try(broom.mixed::tidy(.x, conf.int = FALSE), silent = TRUE)
+                                         if (any(class(tdy) == 'try-error'))
+                                             tdy <- try(broom.mixed::tidy(.x, conf.int = FALSE,
+                                                                      effects='fixed'), silent = TRUE)
+                                         tdy
+                                     }),
+                       
+                       ## Params2 = map(.x = Mod,
+                       ##              .f = ~ {if(!is.null(.x)) {
+                       ##                          tdy <- try(broom.mixed::tidy(.x, conf.int = TRUE),
+                       ##                                     silent = TRUE)
+                       ##                          if (any(class(tdy) == 'try-error'))
+                       ##                              tdy <- broom.mixed::tidy(.x, conf.int = TRUE,
+                       ##                                                       effects='fixed')
+                       ##                          tdy
+                       ##                      } else NULL}),
                        R2 = map(.x = Mod,
                                 .f = ~ {if(!is.null(.x))
                                             MuMIn::r.squaredGLMM(.x)
@@ -556,14 +642,18 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                                               ),
                        Emmeans = map2(.x = Mod,
                                       .y = data,
-                                      .f = ~{if(!is.null(.x))
-                                                emmeansCalc(.x, .y, MEASURE_)
-                                                else NULL}),
+                                      .f = ~{if(!is.null(.x)) {
+                                                 tr <- try(emmeansCalc(.x, .y, MEASURE_), silent = TRUE)
+                                                 if (any(class(tr) == 'try-error')) return(NULL)
+                                                 tr
+                                                } else NULL}),
                        Part = map2(.x = Mod,
                                    .y = data,
-                                   .f = ~ {if(!is.null(.x))
-                                               partialPlots(.x, .y, j, MEASURE_, ylab, xlab)
-                                               else NULL})
+                                   .f = ~ {if(!is.null(.x)) {
+                                               tr <- try(partialPlots(.x, .y, j, MEASURE_, ylab, xlab), silent = TRUE)
+                                                 if (any(class(tr) == 'try-error')) return(NULL)
+                                                 tr
+                                              } else NULL})
                        ## Partial = map(.x = Mod,
                        ##               .f = ~ggeffects::ggemmeans(.x, terms = ~ DV) %>% plot(add.data = TRUE) +
                        ##                   scale_y_log10()) 
@@ -603,7 +693,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
 
             p <- data.EDA.mod %>%
                 rowwise() %>%
-                filter(!is.null(DHARMa_quantiles)) %>%
+                filter(!is.null(Part)) %>%
                 pull(Part) %>%
                 patchwork::wrap_plots(ncol = NCOL) 
             ggsave(filename = paste0(FIGS_PATH, "/partial",
@@ -767,8 +857,8 @@ dual_plot <- function(dat.resp = NULL, dat.pres = NULL,
 }
 ## ----end
 
-## ---- EDA associations fitModels function
 
+## ---- EDA associations checkModel function
 checkModel <- function(mod) {
     if(any(class(mod) == 'try-error')) {return('Bad')}
     summ <- try(summary(mod))
@@ -776,21 +866,28 @@ checkModel <- function(mod) {
     if (is.na(AIC(mod))) {return('Bad')}
     return('Good')
 }
-
+## ----end
+## ---- EDA associations polyModel function
 polyModel <- function(dat, type) {
-    model <- NULL
+    model <- list()
+    model[['engine']] <- 'glmmTMB'
     dat <- dat %>% group_by(WQ_SITE) %>%
         mutate(DV1 = lag(DV))
     if (type == "Routine") {
+        model[['re']] <- "WQ_SITE"
+        model[['poly']] <- "Yes"
         if (length(unique(dat$Year)) > 4) {
+            model[['ar1']] <- 'Yes'
             form <- Value ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE)
             form2 <- Value ~ poly(DV,3) + (1|WQ_SITE)
         }else {
+            model[['ar1']] <- 'No'
             form <- Value ~ poly(DV,3) + (1|WQ_SITE)
         }
     } else {
         form <- Value ~ poly(DV,3)
     }
+    model[['REML']] <- 'Yes'
     ## Try full autocorrelation model
     mod <- try(glmmTMB::glmmTMB(form,
                                 data = dat,
@@ -803,6 +900,7 @@ polyModel <- function(dat, type) {
                silent = TRUE)
     ## if that was bad, try dropping the autocorrelation term
     if (checkModel(mod) == 'Bad') {
+        model[['ar1']] <- 'No'
         mod <- try(glmmTMB::glmmTMB(form2,
                                     data = dat,
                                     family = Gamma(link = "log"),
@@ -811,22 +909,40 @@ polyModel <- function(dat, type) {
                    suppressMessages() %>%
                    suppressWarnings(),
                    silent = TRUE)
-        if (checkModel(mod) == 'Bad') return(NULL)
+        if (checkModel(mod) == 'Bad') {
+            model[['engine']] <- NULL
+            model[['re']] <- NULL
+            model[['ar']] <- NULL
+            model[['poly']] <- NULL
+            model[['REML']] <- NULL
+            return(list(mod = NULL, MODEL_SETTINGS = model))
+        }
     }
-    return(mod)
+    return(list(mod = mod, MODEL_SETTINGS = model))
 }
-
+## ----end
+## ---- EDA associations glmmModel function
 glmmModel <- function(dat, type, REML = TRUE) {
+    model <- list()
+    model[['engine']] <- 'glmmTMB'
+    model[['poly']] <- "No"
+    if (REML) model[['REML']] <- 'Yes'
+    else model[['REML']] <- 'No'
     dat <- dat %>% group_by(WQ_SITE) %>%
         mutate(DV1 = lag(DV))
     if (type == "Routine") {
+        model[['re']] <- "WQ_SITE"
         if (length(unique(dat$Year)) > 4){
+            model[['ar1']] <- 'Yes'
             form <- Value ~ DV + (1|WQ_SITE) + ar1(factor(Year)-1|WQ_SITE)
             form2 <- Value ~ DV + (1|WQ_SITE)
         } else {
+            model[['ar1']] <- 'No'
             form <- Value ~ DV + (1|WQ_SITE)
         }
     } else {
+        model[['re']] <- "No"
+        model[['ar1']] <- 'No'
         form <- Value ~ DV
     }
     ## Try full autocorrelation model
@@ -840,6 +956,7 @@ glmmModel <- function(dat, type, REML = TRUE) {
                silent = TRUE)
     ## if that was bad, try dropping the autocorrelation term
     if (checkModel(mod) == 'Bad') {
+        model[['re']] <- "No"
         mod <- try(glmmTMB::glmmTMB(form2,
                                     data = dat,
                                     family = Gamma(link = "log"),
@@ -848,18 +965,33 @@ glmmModel <- function(dat, type, REML = TRUE) {
                    suppressMessages() %>%
                    suppressWarnings(),
                    silent = TRUE)
-        if (checkModel(mod) == 'Bad') return(NULL)
+        if (checkModel(mod) == 'Bad') {
+            model[['engine']] <- NULL
+            model[['re']] <- NULL
+            model[['ar']] <- NULL
+            model[['poly']] <- NULL
+            model[['REML']] <- NULL
+            return(list(mod = NULL, MODEL_SETTINGS = model))
+        }
     }
-    return(mod)
+    return(list(mod = mod, MODEL_SETTINGS = model))
 }
-
+## ----end
+## ---- EDA associations gamModel function
 gamModel <- function(dat, type) {
+    model <- list()
+    model[['engine']] <- 'gam'
+    model[['poly']] <- "No"
+    model[['ar1']] <- "No"
+    model[['REML']] <- "Yes"
     dat <- dat %>% group_by(WQ_SITE) %>%
         mutate(DV1 = lag(DV))
     k = min(10, length(unique(dat$DV))-2)
     if (type == "Routine") {
+        model[['re']] <- "Yes"
         form <- Value ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're')
     } else {
+        model[['re']] <- "No"
         form <- Value ~ s(DV, bs = 'ps', k = k) + Year
     }
     mod <- mgcv::gam(form,
@@ -871,15 +1003,17 @@ gamModel <- function(dat, type) {
         suppressMessages() %>%
         suppressWarnings()
     ## summary(mod)
-    mod
+    list(mod = mod, MODEL_SETTINGS = model)
 }
-
-fitModels <- function(dat, type) {
+## ----end
+## ---- EDA associations fitModels_old function
+fitModels_old <- function(dat, type, MODELLED_SETTINGS) {
     dat %>% droplevels() %>% pull(ZoneName) %>% unique %>% print
     dat <- dat %>% mutate(Value = ifelse(Value == 0, 0.05, Value))
     mods <- list()
 
-
+    MODEL_NAME <- ""
+    MODEL_SETTINGS <- list()
     ## start with poly
     if (length(unique(dat$DV))>4) {
         mod.poly <- polyModel(dat, type)
@@ -888,47 +1022,232 @@ fitModels <- function(dat, type) {
         mod.poly <- glmmModel(dat, type)
         ## if (class(mod.poly) == "try-error") mod.poly <- NULL
     }
-    if(!is.null(mod.poly)) mods[[length(mods) + 1]] <- mod.poly
+    if(!is.null(mod.poly$mod)) {
+        mods[[length(mods) + 1]] <- mod.poly$mod
+        MODEL_SETTINGS[[length(mods)]] <- mod.poly$MODEL_SETTINGS
+    }
     
     ## linear model
     mod.lin <- glmmModel(dat, type)
     ## if (class(mod.lin) == "try-error")
-    if (is.null(mod.lin))
+    if (is.null(mod.lin$mod))
         mod.lin <- glmmModel(dat, type = type, REML = FALSE)
-    if (is.null(mod.lin))
-        mod.lin <- try(glmmTMB::glmmTMB(Value ~ DV, data = dat, family = Gamma(link = 'log')), silent = TRUE)
-    if (class(mod.lin) == "try-error") mod.lin <- NULL
-    if(!is.null(mod.lin)) mods[[length(mods) + 1]] <- mod.lin
+    if (is.null(mod.lin$mod)) {
+        mod.lin <- list()
+        mod.lin[['mod']] <- try(glmmTMB::glmmTMB(Value ~ DV, data = dat, family = Gamma(link = 'log')), silent = TRUE)
+        mod.lin[['MODEL_SETTINGS']] <- list('engine' = 'glmmTMB', 'poly' = 'No',
+                                            'REML' = "No", 're' = "No", 'ar1' = 'No') 
+    }
+    if (class(mod.lin$mod) == "try-error") {
+        mod.lin$mod <- NULL
+        mod.lin$MODEL_SETTINGS[['engine']] <- NULL
+        mod.lin$MODEL_SETTINGS[['re']] <- NULL
+        mod.lin$MODEL_SETTINGS[['ar']] <- NULL
+        mod.lin$MODEL_SETTINGS[['poly']] <- NULL
+        mod.lin$MODEL_SETTINGS[['REML']] <- NULL
+    }
+    
+    if(!is.null(mod.lin$mod)) {
+        mods[[length(mods) + 1]] <- mod.lin$mod
+        MODEL_SETTINGS[[length(mods)]] <- mod.lin$MODEL_SETTINGS
+    }
     
     ## gam model
     if (length(unique(dat$DV))>4) {
         mod.gam <- try(gamModel(dat, type), silent = TRUE)
-        if (any(class(mod.gam) == "try-error")) mod.gam <- NULL
+        if (any(class(mod.gam$mod) == "try-error")) {
+            mod.gam$mod <- NULL
+            mod.gam$MODEL_SETTINGS[['engine']] <- NULL
+            mod.gam$MODEL_SETTINGS[['re']] <- NULL
+            mod.gam$MODEL_SETTINGS[['ar']] <- NULL
+            mod.gam$MODEL_SETTINGS[['poly']] <- NULL
+            mod.gam$MODEL_SETTINGS[['REML']] <- NULL
+        }
     } else { 
         mod.gam <- glmmModel(dat, type)
-        if (is.null(mod.gam)) {
+        if (is.null(mod.gam$mod)) {
             k = min(10, length(unique(dat$DV)))
             mod.gam <- try(mgcv::gam(Value ~ s(DV, bs = 'ps', k = k),# + s(WQ_SITE, bs = 're'),
                              data = dat,
                              ## family = glmmTMB::tweedie(link = "log")
                              family = Gamma(link = "log")
                              ), silent = TRUE)
-            mod.gam}
-        if (any(class(mod.gam) == "try-error")) mod.gam <- NULL
+            mod.gam <- list('mod' = mod.gam,
+                            'MODEL_SETTINGS' = list('engine' = 'gam', 're' = 'No',
+                                                    'ar1' = 'No', 'poly' = 'No',
+                                                    'REML' = 'No'))
+        }
+        if (any(class(mod.gam$mod) == "try-error")) {
+            mod.gam$mod <- NULL
+            mod.gam$MODEL_SETTINGS[['engine']] <- NULL
+            mod.gam$MODEL_SETTINGS[['re']] <- NULL
+            mod.gam$MODEL_SETTINGS[['ar']] <- NULL
+            mod.gam$MODEL_SETTINGS[['poly']] <- NULL
+            mod.gam$MODEL_SETTINGS[['REML']] <- NULL
+        }
     }
-    if(!is.null(mod.gam)) mods[[length(mods) + 1]] <- mod.gam
+    if(!is.null(mod.gam)) {
+        mods[[length(mods) + 1]] <- mod.gam$mod
+        MODEL_SETTINGS[[length(mods)]] <- mod.gam$MODEL_SETTINGS
+    }
+    
     if (length(mods) == 0) {
-        return(NULL)
+        return(list(mod = NULL, MODELL_SETTINGS = NULL))
     } else if (length(mods) ==1) {
-        return(mods[[1]])
+        return(list(mod = mods[[1]], MODEL_SETTINGS = MODEL_SETTINGS[[1]]))
     } else {
         wch <- which.min(sapply(mods, AIC))
-        if (length(wch) == 0) return(mods[[1]])
-        else return(mods[[wch]])
+        if (length(wch) == 0) return(list(mod = mods[[1]], MODEL_SETTINGS[[1]]))
+        else return(list(mod = mods[[wch]], MODEL_SETTINGS[[wch]]))
     }
     
 }
 ## ----end
+## ---- EDA associations fitModels function
+models <- list()
+models[[1]] <- list(form = Value ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
+                    engine = 'glmmTMB',
+                    re = 'yes',
+                    ar = 'yes',
+                    poly = 'yes',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = Gamma(link = "log"),
+                                REML = TRUE
+                                )
+                    )
+models[[2]] <- list(form = Value ~ poly(DV,3) + (1|WQ_SITE),
+                    engine = 'glmmTMB',
+                    re = 'yes',
+                    ar = 'no',
+                    poly = 'yes',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = Gamma(link = "log"),
+                                REML = TRUE
+                                )
+                    )
+models[[3]] <- list(form = Value ~ DV + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
+                    engine = 'glmmTMB',
+                    re = 'yes',
+                    ar = 'yes',
+                    poly = 'no',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = Gamma(link = "log"),
+                                REML = TRUE
+                                )
+                    )
+models[[4]] <- list(form = Value ~ DV + (1|WQ_SITE),
+                    engine = 'glmmTMB',
+                    re = 'yes',
+                    ar = 'no',
+                    poly = 'no',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = Gamma(link = "log"),
+                                REML = TRUE
+                                )
+                    )
+models[[5]] <- list(form = Value ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're'),
+                    engine = 'gam',
+                    re = 'yes',
+                    ar = 'no',
+                    poly = 'no',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) {
+                        mgcv::gam(form, data = dat,
+                                family = Gamma(link = "log"),
+                                REML = TRUE
+                                )
+                        }
+                    )
+models[[6]] <- list(form = Value ~ s(DV, bs = 'ps', k = k) + Year,
+                    engine = 'gam',
+                    re = 'no',
+                    ar = 'no',
+                    poly = 'no',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) {
+                        mgcv::gam(form, data = dat,
+                                family = Gamma(link = "log"),
+                                REML = TRUE
+                                )
+                        }
+                    )
+models[[7]] <- list(form = Value ~ DV,
+                    engine = 'glmmTMB',
+                    re = 'no',
+                    ar = 'no',
+                    poly = 'no',
+                    REML = 'no',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = Gamma(link = "log"),
+                                REML = FALSE
+                                )
+                    )
+
+
+
+fitModels <- function(dat, type, MODELLED_SETTINGS) {
+    dat %>% droplevels() %>% pull(ZoneName) %>% unique %>% print
+    dat <- dat %>% mutate(Value = ifelse(Value == 0, 0.05, Value))
+    MODELS <- list()
+    for (m in 1:length(models)) {
+        MODELS[[m]] <- models[[m]]
+        form <- models[[m]]$form
+        k <- models[[m]]$k(dat)
+        mod <- try(models[[m]]$call(form, dat), silent = TRUE)
+        MODELS[[m]]$mod <- mod
+        if (any(class(mod) == 'try-error')) {
+            MODELS[[m]]$mod <- NULL
+            next
+        }
+        ## Calculate AIC
+        MODELS[[m]]$AIC <- AIC(mod)
+        ## Calculate DHARMa residuals
+        MODELS[[m]]$DHARMa <- DHARMa::simulateResiduals(mod, plot = FALSE)
+        ## test Residuals
+        ## MODELS[[m]]$Residuals <- DHARMa::testResiduals(MODELS[[m]]$DHARMa, plot = FALSE) %>%
+        ##     suppressMessages() %>% suppressWarnings()
+        MODELS[[m]]$Uniformity <- DHARMa::testUniformity(MODELS[[m]]$DHARMa, plot = FALSE)
+        MODELS[[m]]$Uniformity_p <- MODELS[[m]]$Uniformity$p.value
+        MODELS[[m]]$Dispersion <- DHARMa::testDispersion(MODELS[[m]]$DHARMa, plot = FALSE)
+        MODELS[[m]]$Dispersion_p <- MODELS[[m]]$Dispersion$p.value
+        MODELS[[m]]$Outliers <- DHARMa::testOutliers(MODELS[[m]]$DHARMa, plot = FALSE)
+        MODELS[[m]]$Outliers_p <- MODELS[[m]]$Outliers$p.value
+        ## test for heteroscadacity
+        MODELS[[m]]$Residuals <- DHARMa::testQuantiles(MODELS[[m]]$DHARMa, plot = FALSE) %>%
+            suppressMessages() %>% suppressWarnings()
+        MODELS[[m]]$Quantiles_p <- MODELS[[m]]$Residuals$p.value
+    }
+    ## Check if any models worked
+    wch <- which(sapply(MODELS, function(x) !is.null(x$mod)))
+    if (length(wch)==0) return(list(mod = NULL)) 
+    MODELS <- MODELS[wch]
+    ## Which have acceptable diagnostics
+    unif <- which(sapply(MODELS, function(x) x$Uniformity_p) > 0.05)
+    disp <- which(sapply(MODELS, function(x) x$Dispersion_p) > 0.05)
+    outl <- which(sapply(MODELS, function(x) x$Outliers_p) > 0.05)
+    quan <- which(sapply(MODELS, function(x) x$Quantiles_p) > 0.05)
+    tt <- table(c(rep(unif,3), disp, outl, quan))
+    cand_models <- which(tt == (tt)) 
+    ## Compare AIC
+    aics <- sapply(MODELS[cand_models], function(x) x$AIC)
+    which_aic <- which(!is.na(aics))
+    if (length(which_aic) ==0) return(MODELS[[length(aics)]])
+    MODELS[[which.min(aics)]]
+}
+## ----end
+
+
 
 ## ---- EDA associations fitModelGAM function
 fitModelGAM <- function(dat) {
