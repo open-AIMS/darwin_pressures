@@ -70,6 +70,7 @@ knitr::read_chunk('../scripts/20_process_data.R')
 knitr::read_chunk('../scripts/30_EDA.R')
 
 source('../scripts/functions.R')
+INCLUDE_FIGURES <- TRUE
 ```
 
 # Background
@@ -82,7 +83,6 @@ response variables to understand key influences on marine condition,
 and to incorporate ‘multiple lines of evidence’ into condition
 assessments.
 
- 
 # Project Scope
 This project comprises an exploratory statistical investigation of
 pressure - stressor relationships utilising the water quality data
@@ -106,6 +106,7 @@ of the production of this document.</summary>
 sessionInfo()
 ```
 </details>
+
 
 # Import data
 
@@ -1356,10 +1357,13 @@ for (i in FOCAL_RESPS) {
                   " within each of the Zones. ",
                   "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
     cat(paste0("\n### ", lab, "\n"))
-    cat(paste0("![",cap,"](../output/figures/EDA_routine_",i,".png){#fig-EDA-routine-",i,"} \n\n"))}
+    if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/EDA_routine_",i,".png){#fig-EDA-routine-",i,"} \n\n"))}
 ```
 
 ::::
+	
+## Pressures
+See the plots in the Exploratory data analyses (Discrete samples) section.
 
 ## Dual time series plots
 
@@ -1395,7 +1399,7 @@ for (j in FOCAL_RESPS) {
                           "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
             if (k == 0) k = ""
             else k = paste0(".",k)
-            cat(paste0("![",cap,"](../output/figures/EDA_dual_plot.routine.__",j,"__",MEASURE,k,".png){#fig-EDA-routine-",j,".",MEASURE,k,"} \n\n"))
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/EDA_dual_plot.routine.__",j,"__",MEASURE,k,".png){#fig-EDA-routine-",j,".",MEASURE,k,"} \n\n"))
         }
         
     cat(paste0("\n::::::\n\n"))
@@ -1407,6 +1411,128 @@ for (j in FOCAL_RESPS) {
 
 ::::
 
+
+## Associations
+
+Relating two time series is a difficult statistical challenge.  In
+order to establish that the covariance amongst two time series is
+causal and not simply correlated (due to both being correlated to
+other influences), it is necessary to remove the temporal component.
+For example, two time series might both appear to increase linearly
+over time.  This may be because one of the variables genuinely does
+impact on the other.  However, it is also possible that they are both
+responding to similar underlying influences.  Removing the temporal
+element, means that the associations are concentrating on the smaller
+perturbations rather than the overall trends.
+
+To remove the temporal element, each time series can be transformed
+into differences between successive observations.  Such a
+transformation will result in time series that fluctuate over time.
+If the fluctuations of each time series coincide, then it is more
+likely that the associations are correlative.
+
+Unfortunately, for this transformation to be useful, it is necessary
+for both time series to be regular (uniformly spaced out sampling
+intervals with no missing values) or at least identically irregular -
+neither of which apply to the current data series.  Alternatively, if
+the time series were sufficiently long (20+ years), non-parametric
+spline models could be fit to reconstruct estimates of the full time
+series from which to sample at regular time intervals to achieve a
+similar analysis.  Unfortunately again this option is not available
+for these data due to the relatively short time span of the
+data. Consequently, we can only explore simple models that explore the
+relationships between the time series and acknowledge that any
+inferred relationships may well be artefacts.
+
+
+:::: panel-tabset
+
+```{r EDA routine associations, results='asis', eval=TRUE, echo=FALSE}
+for (j in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == j) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("\n::::: panel-tabset\n\n"))
+    for (i in 1:nrow(FOCAL_PRESSURES)) {
+        MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+        MEASURE_lab <- units_lookup %>%
+            filter(Measure == MEASURE) %>%
+            pull(TableLabel) %>% 
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", MEASURE_lab, "\n"))
+
+        cat(paste0("\n:::::: panel-tabset\n\n"))
+        cat(paste0("\n#### Simple trends\n"))
+    
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            cap <- paste0("Simple Generalised Additive Model (GAM) trends (lag = ",k,") for ",lab,
+                          " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
+                          "Paired observations are marked by a number reflecting the position of the observation in the joint temporal series.  For example, a label of \"1\" indicates that this observation was collected during the oldest sampling time.  Blue lines and ribbons represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k,".",k)}
+            
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/gamPlots.routine.__",j,"__",MEASURE,k,".png){#fig-EDA-routine-",j,".",MEASURE,k,"} \n\n"))
+
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+        cat(paste0("\n#### Partial plots\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            cap <- paste0("Partial trends for the fitted models (lag = ",k,") of ",lab,
+                          " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
+                          "Paired obsevations are symbolised by solid black points.Points represent collected observations at unique lat/long/Year combinations.  Blue lines and ribbons represent the estimated model outcomes with 95% confidence envelopes.  Missing panels (Zones) occur when no stable model could be fit to the data.")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/partial.routine.__",j,"__",MEASURE,k,".png){#fig-partial-routine-",j,".",MEASURE,k,"} \n\n"))
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+        cat(paste0("\n#### DHARMa residual uniformity\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            cap <- paste0("Tests of uniformity in DHARMa (simulated) residuals (lag = ",k,") associated with fitted models of ",lab,
+                          " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
+                          "Ideally, the QQ plots should be straight lines.   Substantial deviations might imply that the underlying modelling distributions are not ideal.  Overlayed onto the QQ plots are a set of three statistical diagnostics of 1) distributional compliance, 2) dispersion and 3) outlierness.  Tests highlighted in red, indicate that there might be some evidence for a lack of fit in the data.  Not however that these are only guides and tend to be far more sensitive than the underlying modelling assumptions that they are inferring about.")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_unif.routine.__",j,"__",MEASURE,k,".png){#fig-unif-routine-",j,".",MEASURE,k,"} \n\n"))
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+        cat(paste0("\n#### DHARMa residual quantiles\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            cap <- paste0("Tests of DHARMa (simulated) residuals patterns with quantiles tests (lag = ",k,") associated with fitted models of ",lab,
+                          " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
+                          "Ideally, a residual plot should present as a a random cloud of points (notwithstanding that if there are only a small number of unique observations, the points will appear to be in vertical lines).  To help identify trends in the residuals, a dashed smoother is also included (although this is often highly sensitive to small fluctuations and is of little value when the sample sizes are small).")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_quant.routine.__",j,"__",MEASURE,k,".png){#fig-quant-routine-",j,".",MEASURE,k,"} \n\n"))
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+        cat(paste0("\n#### Summary Tables\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            summary_table(j, MEASURE, k, routine = TRUE) %>%
+                save_kable(file = paste0(TABS_PATH,"/tab.routine__",j,"__", MEASURE,k,".html"),
+                           self_contained = F)
+        }
+        cat(paste0("\n:::::::\n\n"))
+        
+        cat(paste0("\n::::::\n\n")) 
+    }
+    cat(paste0("\n:::::\n\n"))
+}
+```
+
+::::
 
 :::
 
@@ -1440,7 +1566,7 @@ for (i in FOCAL_RESPS) {
                   " within each of the Zones. ",
                   "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
     cat(paste0("\n### ", lab, "\n"))
-    cat(paste0("![",cap,"](../output/figures/EDA_",i,".png){#fig-EDA-",i,"} \n\n"))}
+    if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/EDA_",i,".png){#fig-EDA-",i,"} \n\n"))}
 ```
 
 ::::
@@ -1541,35 +1667,148 @@ for (j in FOCAL_RESPS) {
         cat(paste0("\n#### Simple trends\n"))
 
         cat(paste0("\n::::::: panel-tabset\n\n"))
-
         for (k in 0:2) {
             cat(paste0("\n##### Lag ", k, "\n"))
-            cap <- paste0("Temporal trends (lag = ",k,") in ",lab,
-                          " (orange) and ", MEASURE_lab, " (purple) within each of the Zones. ",
-                          "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
-            if (k == 0) k = ""
-            else k = paste0("_lag",k,".",k)
-            cat(paste0("![",cap,"](../output/figures/gamPlots.__",j,"__",MEASURE,k,".png){#fig-EDA-",j,".",MEASURE,k,"} \n\n"))
+            cap <- paste0("Simple Generalised Additive Model (GAM) trends (lag = ",k,") for ",MEASURE_lab,
+                          " against ", lab, " for discrete samples from within each of the Zones. ",
+                          "Paired observations are marked by a number reflecting the position of the observation in the joint temporal series.  For example, a label of \"1\" indicates that this observation was collected during the oldest sampling time.  Blue lines and ribbons represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k,".",k)}
+            
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/gamPlots.__",j,"__",MEASURE,k,".png){#fig-EDA-",j,".",MEASURE,k,"} \n\n"))
 
         }
-        
         cat(paste0("\n:::::::\n\n"))
 
         cat(paste0("\n#### Partial plots\n"))
         cat(paste0("\n::::::: panel-tabset\n\n"))
-
         for (k in 0:2) {
             cat(paste0("\n##### Lag ", k, "\n"))
-            if (k == 0) k = ""
-            else k = paste0("_lag.",k)
-            #cat(paste0("![",cap,"](../output/figures/partial__",j,"__",MEASURE,k,".png){#fig-EDA-",j,".",MEASURE,k,"} \n\n"))
-            #cat(paste0("\n#### DHARMa residual uniformity\n"))
-            #cat(paste0("![",cap,"](../output/figures/DHARMa_unif__",j,"__",MEASURE,k,".png){#fig-EDA-",j,".",MEASURE,k,"} \n\n"))
-            #cat(paste0("\n#### DHARMa residual quantiles\n"))
-            #cat(paste0("![",cap,"](../output/figures/DHARMa_quant__",j,"__",MEASURE,k,".png){#fig-EDA-",j,".",MEASURE,k,"} \n\n"))
+            cap <- paste0("Partial trends for the fitted models (lag = ",k,") of ",lab,
+                          " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
+                          "Paired obsevations are symbolised by solid black points.Points represent collected observations at unique lat/long/Year combinations.  Blue lines and ribbons represent the estimated model outcomes with 95% confidence envelopes.  Missing panels (Zones) occur when no stable model could be fit to the data.")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/partial.__",j,"__",MEASURE,k,".png){#fig-partial-",j,".",MEASURE,k,"} \n\n"))
         }
-       
         cat(paste0("\n:::::::\n\n"))
+
+        cat(paste0("\n#### DHARMa residual uniformity\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            cap <- paste0("Tests of uniformity in DHARMa (simulated) residuals (lag = ",k,") associated with fitted models of ",lab,
+                          " against ", MEASURE_lab, " for discrete samples within each of the Zones. ",
+                          "Ideally, the QQ plots should be straight lines.   Substantial deviations might imply that the underlying modelling distributions are not ideal.  Overlayed onto the QQ plots are a set of three statistical diagnostics of 1) distributional compliance, 2) dispersion and 3) outlierness.  Tests highlighted in red, indicate that there might be some evidence for a lack of fit in the data.  Not however that these are only guides and tend to be far more sensitive than the underlying modelling assumptions that they are inferring about.")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_unif.__",j,"__",MEASURE,k,".png){#fig-unif-",j,".",MEASURE,k,"} \n\n"))
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+        cat(paste0("\n#### DHARMa residual quantiles\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            cap <- paste0("Tests of DHARMa (simulated) residuals patterns with quantiles tests (lag = ",k,") associated with fitted models of ",lab,
+                          " against ", MEASURE_lab, " for discrete samples within each of the Zones. ",
+                          "Ideally, a residual plot should present as a a random cloud of points (notwithstanding that if there are only a small number of unique observations, the points will appear to be in vertical lines).  To help identify trends in the residuals, a dashed smoother is also included (although this is often highly sensitive to small fluctuations and is of little value when the sample sizes are small).")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_quant.__",j,"__",MEASURE,k,".png){#fig-quant-",j,".",MEASURE,k,"} \n\n"))
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+
+        cat(paste0("\n#### Summary Tables\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+   
+            summary_table(j, MEASURE, k) %>%
+                save_kable(file = paste0(TABS_PATH,"/tab.__",j,"__", MEASURE,k,".html"),
+                           self_contained = F)
+              
+            ## data.EDA.mod.sum <- readRDS(file = paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",
+            ##                                           j,"__",MEASURE,k,".RData"))
+            ## R2 <- data.EDA.mod.sum %>%
+            ##     mutate(R2c = map(.x = R2, .f = ~ .x[3,1])) %>%
+            ##     mutate(R2m = map(.x = R2, .f = ~ .x[3,2])) %>%
+            ##     dplyr::select(ZoneName, R2c, R2m) %>%
+            ##     unnest(c(R2c, R2m)) %>%
+            ##     pivot_longer(cols = c(R2c, R2m),
+            ##                  names_to = "term") %>%
+            ##     mutate(effect = ifelse(term == 'R2c','fixed','Total')) %>%
+            ##     mutate(group = "") %>%
+            ##     mutate(Parameter = sprintf("% 0.3f",value)) %>%
+            ##     dplyr::select(-value)
+            ## Emmeans <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+            ##     unnest(Emmeans) %>%
+            ##     group_by(ZoneName) %>%
+            ##     summarise(Emmeans = list(response), .groups = "drop")
+            
+            ## EM <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+            ##     unnest(Emmeans) %>%
+            ##     {split(.$response, .$ZoneName)}
+            
+            ## data.EDA.mod.sum %>% dplyr::select(ZoneName, Params2) %>% unnest(Params2) -> a
+
+            ## as_tibble(a) %>%
+            ##     mutate(term = str_replace(term, 'sd__', "")) %>%
+            ##     ## mutate(Parameter = paste(insight::format_value(estimate,),
+            ##     ##                           insight::format_ci(conf.low, conf.high, ci = NULL))) %>%
+            ##     mutate(Parameter = sprintf("% 0.3f\n[% 2.3f,% 2.3f]", estimate,conf.low, conf.high)) %>%
+            ##     mutate(Parameter = str_replace_all(Parameter, "NA|NaN|Inf","")) %>%
+            ##     mutate(Parameter = replace_na(Parameter, "")) %>%
+            ##     ## mutate(Parameter = str_glue("{format(estimate,justify = 'left', digits = 3, scientific = FALSE)}")) %>%
+            ##     dplyr::select(-std.error, -statistic, -p.value, -estimate, -conf.low, -conf.high) %>% 
+            ##     full_join(R2) %>%
+            ##     ## filter(!Stat %in% c('z', 'df_error', 'p', 'SE', 'CI')) %>%
+            ##     filter(!(term == "(Intercept)" & effect == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+            ##     dplyr::select(-component) %>%
+            ##     mutate(term = paste0(group,term)) %>%
+            ##     ## arrange(ZoneName, effect, term) %>%
+            ##     mutate(term = str_replace(term, "WQ_SITE\\(Intercept\\)", "Site (SD)")) %>%
+            ##     dplyr::select(-group) %>%
+            ##     ## pivot_wider(id_cols = everything(),
+            ##     ##             names_from = Stat,
+            ##     ##             values_from = value)
+            ##                             #unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat,) %>%
+            ##     unite(col = 'Name', effect, term, sep = "__",na.rm = FALSE) %>%
+            ##                             #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+            ##     ## unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+            ##     mutate(Name = str_replace_all(Name, "NA","")) %>% 
+            ##     mutate(Name = str_replace(Name, "poly\\(DV, 3\\)1", "DV (Linear)")) %>%
+            ##     mutate(Name = str_replace(Name, "poly\\(DV, 3\\)2", "DV (Quadratic)")) %>%
+            ##     mutate(Name = str_replace(Name, "poly\\(DV, 3\\)3", "DV (Cubic)")) %>%
+            ##     mutate(Name = str_replace(Name, "fixed", "Fixed")) %>%
+            ##     mutate(Name = str_replace(Name, "ran_pars", "Random")) %>%
+            ##     arrange(Name) %>%
+            ##     pivot_wider(id_cols = everything(),
+            ##                 names_from = Name,
+            ##                 values_from = Parameter) %>%
+            ##     arrange(ZoneName) %>%
+            ##     rename(Zone = ZoneName) -> b
+            
+            ## library(kableExtra)
+            ## ##library(webshot)
+            ## b %>%
+            ##     full_join(Emmeans %>% rename(Zone = ZoneName)) %>%
+            ##     dplyr::rename(Total__Trend = Emmeans) %>%
+            ##     dplyr::mutate(Total__Trend = "") %>% 
+            ##                             #dplyr::select(-Trend) %>%
+            ##     mutate(across(matches("DV|Year|Random"), ~replace_na(.x, " "))) %>%
+            ##     kable(escape = FALSE) %>%
+            ##     column_spec(ncol(b)+1, image = spec_plot(EM, same_lim = FALSE)) %>%
+            ##     header_separate(sep="__") %>%
+            ##     kable_classic(full_width = T) %>%
+            ##     kable_styling(bootstrap_options = "striped", font_size = 12) %>%
+            ##                             #add_header_above(c(" " = 1, "Fixed" = 6, "Random" = 1, "Total" = 2)) %>%
+            ##     ##as_image(file = "../output/figures/test.png")
+            ##     ##save_kable("../output/figures/test.png")
+            ##     ## knitr::knit_print()
+            ##     print()
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+
 
         
         cat(paste0("\n::::::\n\n")) 

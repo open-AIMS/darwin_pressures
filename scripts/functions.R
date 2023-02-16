@@ -12,6 +12,7 @@ library(ggsflabel)
 library(foreach)
 library(doParallel)
 library(furrr)
+library(kableExtra)
 sf_use_s2(FALSE)
 ## ----end
 
@@ -19,6 +20,7 @@ sf_use_s2(FALSE)
 DATA_PATH <<- "../data/"
 OUTPUT_PATH <<- "../output/"
 FIGS_PATH <<- paste0(OUTPUT_PATH, "figures")
+TABS_PATH <<- paste0(OUTPUT_PATH, "tables")
 
 if (!dir.exists(DATA_PATH)) dir.create(DATA_PATH)
 if (!dir.exists(paste0(DATA_PATH,"primary"))) dir.create(paste0(DATA_PATH, "primary"))
@@ -28,6 +30,7 @@ if (!dir.exists(paste0(DATA_PATH,"summarised"))) dir.create(paste0(DATA_PATH, "s
 
 if (!dir.exists(OUTPUT_PATH)) dir.create(OUTPUT_PATH)
 if (!dir.exists(FIGS_PATH)) dir.create(FIGS_PATH)
+if (!dir.exists(TABS_PATH)) dir.create(TABS_PATH)
 ## ----end
 
 ## ---- set up cores function
@@ -450,7 +453,7 @@ modelled_settings_prior <- function(MEASURE, lag, units_lookup) {
 
 ## ---- EDA associations simple_gam function
 ## This function is applied to the response vs pressure data
-simple_gam <- function(data.EDA, MEASURE_, ylab, xlab, FILE_APPEND, FILE_LAG) {
+simple_gam <- function(data.EDA, MEASURE_, ylab, xlab, FILE_APPEND, FILE_LAG, j) {
     g <- data.EDA %>%
         ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
         ## geom_point() +
@@ -524,7 +527,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 ## mutate(Value = ifelse(Value==0, 0.001, Value)) %>%
             ## Simple set of gams relating response and pressure (at give lag)
             ## output to: paste0(FIGS_PATH, "/gamPlots", FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png")
-            simple_gam(data.EDA, MEASURE_, ylab, xlab, FILE_APPEND, FILE_LAG) 
+            simple_gam(data.EDA, MEASURE_, ylab, xlab, FILE_APPEND, FILE_LAG, j) 
 
             ## g <- data.EDA %>%
             ##     ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
@@ -684,24 +687,26 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 pull(DHARMa_quantiles) %>%
                 patchwork::wrap_plots(ncol = NCOL) &
                 theme(plot.title = element_text(hjust = 0.5))
-            ggsave(filename = paste0(FIGS_PATH, "/DHARMa_quant",
-                                     FILE_APPEND,"__",j,"__",MEASURE_,".png"),
-                   p,
-                   width = NCOL * 4,
-                   height = NROW * 4,
-                   dpi = 72)
+            if (length(p$patches$plots) != 0)
+                ggsave(filename = paste0(FIGS_PATH, "/DHARMa_quant",
+                                         FILE_APPEND,"__",j,"__",MEASURE_,".png"),
+                       p,
+                       width = NCOL * 4,
+                       height = NROW * 4,
+                       dpi = 72)
 
             p <- data.EDA.mod %>%
                 rowwise() %>%
                 filter(!is.null(Part)) %>%
                 pull(Part) %>%
                 patchwork::wrap_plots(ncol = NCOL) 
-            ggsave(filename = paste0(FIGS_PATH, "/partial",
-                                     FILE_APPEND,"__",j,"__",MEASURE_,".png"),
-                   p,
-                   width = NCOL * 4,
-                   height = NROW * 3,
-                   dpi = 72)
+            if (length(p$patches$plots) != 0 )
+                ggsave(filename = paste0(FIGS_PATH, "/partial",
+                                         FILE_APPEND,"__",j,"__",MEASURE_,".png"),
+                       p,
+                       width = NCOL * 4,
+                       height = NROW * 3,
+                       dpi = 72)
 
             data.EDA.mod.sum <- data.EDA.mod %>% dplyr::select(Zone, ZoneName, Params, Params2,R2, Emmeans)
             saveRDS(data.EDA.mod.sum,
@@ -1241,8 +1246,9 @@ fitModels <- function(dat, type, MODELLED_SETTINGS) {
     cand_models <- which(tt == (tt)) 
     ## Compare AIC
     aics <- sapply(MODELS[cand_models], function(x) x$AIC)
+    ## check that AICs are not zero
     which_aic <- which(!is.na(aics))
-    if (length(which_aic) ==0) return(MODELS[[length(aics)]])
+    if (length(which_aic) ==0) return(list(mod = NULL)) #return(MODELS[[length(aics)]])
     MODELS[[which.min(aics)]]
 }
 ## ----end
@@ -1301,6 +1307,122 @@ emmeansCalc <- function(mod, dat, DV) {
         as.data.frame()
     pred
 }
+## ----end
+
+## ---- EDA associations summary table
+summary_table <- function(j, MEASURE, k, routine = TRUE) {
+    if (routine == TRUE) {
+            file <- paste0(DATA_PATH,"summarised/data.EDA.routine.mod.sum__",
+                           j,"__",MEASURE,k,".RData")
+        } else {
+            file <- paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",
+                           j,"__",MEASURE,k,".RData")
+        }
+    
+    if (!file.exists(file)) {
+        return(cat(paste("\n\n", file, "does not exist.\n")))
+    }
+    data.EDA.mod.sum <- readRDS(file = file)
+
+    if (all(sapply(data.EDA.mod.sum$Params, is.null)))
+        return(cat(paste("\n\n no valid models resulted.\n")))
+        
+    R2 <- data.EDA.mod.sum %>%
+        mutate(R2c = map(.x = R2, .f = ~ .x[3,1])) %>%
+        mutate(R2m = map(.x = R2, .f = ~ .x[3,2])) %>%
+        dplyr::select(ZoneName, R2c, R2m) %>%
+        unnest(c(R2c, R2m)) %>%
+        pivot_longer(cols = c(R2c, R2m),
+                     names_to = "term") %>%
+        mutate(effect = ifelse(term == 'R2c','fixed','Total')) %>%
+        mutate(group = "") %>%
+        mutate(Parameter = sprintf("% 0.3f",value)) %>%
+        dplyr::select(-value) %>%
+        suppressMessages() %>%
+        suppressWarnings()
+
+    Emmeans <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+        unnest(Emmeans) %>%
+        group_by(ZoneName) %>%
+        summarise(Emmeans = list(response), .groups = "drop")
+    
+    EM <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+        unnest(Emmeans) %>%
+        ## ensure there are no Inf values
+        mutate(response = ifelse(is.infinite(response), NA, response)) %>%
+        {split(.$response, .$ZoneName)}
+
+    ## Remove any that have try-catch Params2 values
+    wch <- sapply(data.EDA.mod.sum$Params2, function(x) any(class(x) != "try-error")) 
+    data.EDA.mod.sum <- data.EDA.mod.sum[wch,]
+    param_table <- data.EDA.mod.sum %>%
+        dplyr::select(ZoneName, Params2) %>%
+        unnest(Params2) 
+
+    param_table2 <-
+        as_tibble(param_table) %>%
+        mutate(term = str_replace(term, 'sd__', "")) %>%
+        ## mutate(Parameter = paste(insight::format_value(estimate,),
+        ##                           insight::format_ci(conf.low, conf.high, ci = NULL))) %>%
+        mutate(Parameter = sprintf("% 0.3f\n[% 2.3f,% 2.3f]", estimate,conf.low, conf.high)) %>%
+        mutate(Parameter = str_replace_all(Parameter, "NA|NaN|Inf","")) %>%
+        mutate(Parameter = replace_na(Parameter, "")) %>%
+        ## mutate(Parameter = str_glue("{format(estimate,justify = 'left', digits = 3, scientific = FALSE)}")) %>%
+        dplyr::select(-std.error, -statistic, -p.value, -estimate, -conf.low, -conf.high) %>% 
+        full_join(R2) %>%
+        ## filter(!Stat %in% c('z', 'df_error', 'p', 'SE', 'CI')) %>%
+        filter(!(term == "(Intercept)" & effect == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+        dplyr::select(-component) %>%
+        mutate(term = paste0(group,term)) %>%
+        ## arrange(ZoneName, effect, term) %>%
+        mutate(term = str_replace(term, "WQ_SITE\\(Intercept\\)", "Site (SD)")) %>%
+        dplyr::select(-group) %>%
+        ## pivot_wider(id_cols = everything(),
+        ##             names_from = Stat,
+        ##             values_from = value)
+                                        #unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat,) %>%
+        unite(col = 'Name', effect, term, sep = "__",na.rm = FALSE) %>%
+                                        #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+        ## unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+        mutate(Name = str_replace_all(Name, "NA","")) %>% 
+        mutate(Name = str_replace(Name, "poly\\(DV, 3\\)1", "DV (Linear)")) %>%
+        mutate(Name = str_replace(Name, "poly\\(DV, 3\\)2", "DV (Quadratic)")) %>%
+        mutate(Name = str_replace(Name, "poly\\(DV, 3\\)3", "DV (Cubic)")) %>%
+        mutate(Name = str_replace(Name, "fixed", "Fixed")) %>%
+        mutate(Name = str_replace(Name, "ran_pars", "Random")) %>%
+        arrange(Name) %>%
+        pivot_wider(id_cols = everything(),
+                    names_from = Name,
+                    values_from = Parameter) %>%
+        arrange(ZoneName) %>%
+        rename(Zone = ZoneName) %>%
+        suppressMessages() %>%
+        suppressWarnings()
+
+    library(kableExtra)
+    ##library(webshot)
+    param_table2 %>%
+        full_join(Emmeans %>% rename(Zone = ZoneName)) %>%
+        dplyr::rename(Total__Trend = Emmeans) %>%
+        dplyr::mutate(Total__Trend = "") %>% 
+                                        #dplyr::select(-Trend) %>%
+        mutate(across(matches("DV|Year|Random"), ~replace_na(.x, " "))) %>%
+        kable(escape = FALSE) %>%
+        column_spec(ncol(param_table2)+1, image = spec_plot(EM, same_lim = FALSE)) %>%
+        header_separate(sep="__") %>%
+        kable_classic(full_width = T) %>%
+        kable_styling(bootstrap_options = "striped", font_size = 12) %>%
+                                        #add_header_above(c(" " = 1, "Fixed" = 6, "Random" = 1, "Total" = 2)) %>%
+        ##as_image(file = "../output/figures/test.png")
+        ##save_kable("../output/figures/test.png")
+        ## knitr::knit_print()
+        print() %>%
+        suppressMessages() %>%
+        suppressWarnings()
+
+}
+
+
 ## ----end
 
 

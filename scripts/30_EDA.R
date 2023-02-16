@@ -142,6 +142,7 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
 {
     ## ---- EDA Routine associations data prep
     assoc_data_pred(data, type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES)
+    ## assoc_data_pred(data, type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES, diff = TRUE)
     ## ----end
     ## ---- EDA Routine dual plots
     dual_plots(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES)
@@ -155,7 +156,6 @@ data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
     associations(type = "Routine", FOCAL_RESPS, FOCAL_PRESSURES, lag = 2)
     ## ----end
 }
-
 
 ## Discrete samples =================
 {
