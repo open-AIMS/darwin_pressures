@@ -93,11 +93,13 @@ FOCAL_RESPS <- var_lookup %>%
 {
     ## ---- process data 2012_2015
     readRDS(file = paste0(DATA_PATH, "primary/wq_2012.RData")) %>% 
-        dplyr::select(Var = `Observed Property ID`,
-                      Date = `Observed DateTime`,
-                      Value = `Result Value`,
-                      Latitude,
-                      Longitude) %>% 
+        dplyr::select(
+                   Location = `Location ID`,
+                   Var = `Observed Property ID`,
+                   Date = `Observed DateTime`,
+                   Value = `Result Value`,
+                   Latitude,
+                   Longitude) %>% 
         left_join(FOCAL_RESPS %>%
                   dplyr::select(Var, Measure)) %>%
         mutate(Date = as.Date(Date),
@@ -114,7 +116,7 @@ FOCAL_RESPS <- var_lookup %>%
                      crs = st_crs(4326)) %>%
         st_transform(crs = st_crs(spatial)) %>%
         sf::st_intersection(spatial) %>%
-        dplyr::select(ZoneName = Zone_Name, Longitude, Latitude,
+        dplyr::select(ZoneName = Zone_Name, Location, Longitude, Latitude,
                       Date, Year, Source, Measure, Value) ->
         wq
     wq.spatial <- wq
@@ -125,7 +127,8 @@ FOCAL_RESPS <- var_lookup %>%
     ## ---- process data 2012_2015 design
     wq %>%
         filter(Source == "Discrete") %>%
-        mutate(Site = interaction(Longitude, Latitude)) %>%
+        ## mutate(Site = interaction(Longitude, Latitude)) %>%
+        mutate(Site = Location) %>%
         dplyr::select(ZoneName, Site, Year, Measure) %>%
         distinct() ->
         wq.design
@@ -148,8 +151,8 @@ FOCAL_RESPS <- var_lookup %>%
         theme_bw(14) +
         theme(
             axis.title = element_blank(),
-            axis.text.y = element_blank(),
-            axis.ticks.y = element_blank(),
+            axis.text.y = element_text(size = 7),
+            ## axis.ticks.y = element_blank(),
             legend.text.align = 0,
             strip.text.y = element_text(angle = 0),
             panel.spacing.x = unit("0.5", "cm")
@@ -194,14 +197,14 @@ FOCAL_RESPS <- var_lookup %>%
         left_join(spatial_lookup) %>%
         filter(!is.na(Measure),
                !is.na(Latitude)) %>%
-        dplyr::select(ZoneName, Longitude, Latitude,
+        dplyr::select(ZoneName, Location = `Location ID`, Longitude, Latitude,
                       Date, Year, Source, Measure, Value) ->
         wq
     saveRDS(wq, file = paste0(DATA_PATH, 'processed/wq_2016.RData'))
     wq.spatial <- wq %>%
         filter(!is.na(Latitude), !is.na(Longitude),
                Latitude != 0, Longitude !=0) %>%
-        dplyr::select(Longitude, Latitude, Source, Year, Value, Measure) %>%
+        dplyr::select(Location, Longitude, Latitude, Source, Year, Value, Measure) %>%
         distinct() %>% 
         sf::st_as_sf(coords = c('Longitude', 'Latitude'),
                      crs = st_crs(4326))
@@ -210,7 +213,9 @@ FOCAL_RESPS <- var_lookup %>%
     ## ---- process data 2016_2022 design
     wq %>%
         filter(Source == "Discrete") %>%
-        mutate(Site = interaction(Longitude, Latitude)) %>%
+        mutate(Site = ifelse(is.na(Location),
+                             interaction(Longitude, Latitude),
+                             Location)) %>%
         dplyr::select(ZoneName, Site, Year, Measure) %>%
         distinct() ->
         wq.design
@@ -399,7 +404,7 @@ FOCAL_RESPS <- var_lookup %>%
     ## ---- process data Routine sites
     routine_sites <- readRDS(file = paste0(DATA_PATH, "primary/wq_routine_sites.RData"))
     routine_sites <- routine_sites %>%
-        dplyr::select(Site, Latitude, Longitude) %>%
+        dplyr::select(Site, Gcode, Latitude, Longitude) %>%
         mutate(Type = "Routine")
     saveRDS(routine_sites, file = paste0(DATA_PATH, "processed/wq_routine_sites.RData"))
     ## ----end
@@ -429,6 +434,8 @@ FOCAL_RESPS <- var_lookup %>%
     spatial_lookup <- readRDS(paste0(DATA_PATH, 'processed/spatial_lookup.RData'))
     readRDS(file = paste0(DATA_PATH, 'processed/wq_2012.RData')) %>%
         rbind(readRDS(file = paste0(DATA_PATH, 'processed/wq_2016.RData'))) %>%
+        ##round lat/long to three decimal places
+        mutate(across(c(Longitude, Latitude), round,3)) %>%
         left_join(spatial_lookup) %>%
         pivot_wider(id_cols = everything(),
                     values_fn = mean,
@@ -436,9 +443,31 @@ FOCAL_RESPS <- var_lookup %>%
                     values_from = 'Value') %>%
         mutate(WQ_ID = 1:n(),
                WQ_SITE = factor(paste(Longitude, Latitude))) %>%
-        full_join(routine_sites) %>%
+        ## first join on Location/Gcode without lat/long
+        ## this is to join on those sites that have a Location, but the lat/longs
+        ## may not correspond exactly to the lookup
+        left_join(routine_sites %>% dplyr::rename(Location = Gcode) %>%
+                  dplyr::select(-Latitude, -Longitude)) %>%
+        mutate(WQ_SITE = ifelse(is.na(Location), WQ_SITE, Location),
+               WQ_SITE = factor(WQ_SITE)) %>%
+        dplyr::select(-Location) %>%
+        ## mutate(Site1 = Site) %>%
+        ## dplyr::select(-Site) %>%
+        ## then join on Latitude/Longitude to apply locations to the more recent records
+        ## that do not have location id's
+        ## we should also round the lat/longs to 3 places to to help match WQ data 
+        left_join(routine_sites %>% dplyr::select(-Gcode) %>%
+                  mutate(across(c(Longitude, Latitude), round,3)),
+                  by = c('Latitude' = 'Latitude', 'Longitude' = 'Longitude')) %>%
+        mutate(Site = ifelse(is.na(Site.y), Site.x, Site.y),
+               Type = ifelse(is.na(Type.y), Type.x, Type.y)) %>%
+        dplyr::select(-Site.y, -Site.x, -Type.y, -Type.x) %>%
+        mutate(WQ_SITE = ifelse(is.na(Site), WQ_SITE, Site),
+               WQ_SITE = factor(WQ_SITE)) %>%
         mutate(Type = ifelse(is.na(Type), 'Other', Type),
-               Type = ifelse(Type == "Routine" | Year < 2016, 'Routine', 'Other')) ->
+               Type = ifelse(Type == "Routine" | Year < 2016, 'Routine', 'Other')) %>%
+        filter(!is.na(ZoneName)) %>%
+        droplevels() ->
         wq
 
     saveRDS(wq, file = paste0(DATA_PATH, 'processed/wq.RData'))
@@ -447,7 +476,8 @@ FOCAL_RESPS <- var_lookup %>%
     ## ---- process data combine design Routine
     wq %>%
         filter(Type == "Routine") %>%
-        mutate(Site = interaction(Longitude, Latitude)) %>%
+        ## mutate(Site = interaction(Longitude, Latitude)) %>%
+        mutate(Site = WQ_SITE) %>%
         pivot_longer(cols = c(Chla, Turbidity, DO, PO4, NH3, NOx),
                      names_to = "Measure",
                      values_to = "Value") %>%

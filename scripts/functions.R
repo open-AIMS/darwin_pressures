@@ -529,6 +529,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
             ## output to: paste0(FIGS_PATH, "/gamPlots", FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png")
             simple_gam(data.EDA, MEASURE_, ylab, xlab, FILE_APPEND, FILE_LAG, j) 
 
+            file_suffix <- paste0(FILE_APPEND, "__", j, "__", MEASURE_)
             ## g <- data.EDA %>%
             ##     ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
             ##     geom_point() +
@@ -581,7 +582,7 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 group_by(Zone, ZoneName) %>%
                 summarise(data = list(cur_data_all()), .groups = "drop") %>%
                 mutate(Mod_info = map(.x = data,
-                                      .f = ~fitModels(.x, type, MODELLED_SETTINGS) %>%
+                                      .f = ~fitModels(.x, type, MODELLED_SETTINGS, file_suffix) %>%
                                       suppressWarnings()),
                        Mod = map(.x = Mod_info,
                                  .f = ~.x$mod),
@@ -1198,11 +1199,100 @@ models[[7]] <- list(form = Value ~ DV,
                                 REML = FALSE
                                 )
                     )
+models[[8]] <- list(form = log(Value) ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
+                    engine = 'glmmTMB',
+                    re = 'yes',
+                    ar = 'yes',
+                    poly = 'yes',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = gaussian(),
+                                REML = TRUE
+                                )
+                    )
+models[[9]] <- list(form = log(Value) ~ poly(DV,3) + (1|WQ_SITE),
+                    engine = 'glmmTMB',
+                    re = 'yes',
+                    ar = 'no',
+                    poly = 'yes',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = gaussian(),
+                                REML = TRUE
+                                )
+                    )
+models[[10]] <- list(form = log(Value) ~ DV + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
+                    engine = 'glmmTMB',
+                    re = 'yes',
+                    ar = 'yes',
+                    poly = 'no',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = gaussian(),
+                                REML = TRUE
+                                )
+                    )
+models[[11]] <- list(form = log(Value) ~ DV + (1|WQ_SITE),
+                    engine = 'glmmTMB',
+                    re = 'yes',
+                    ar = 'no',
+                    poly = 'no',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = gaussian(),
+                                REML = TRUE
+                                )
+                    )
+models[[12]] <- list(form = log(Value) ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're'),
+                    engine = 'gam',
+                    re = 'yes',
+                    ar = 'no',
+                    poly = 'no',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) {
+                        mgcv::gam(form, data = dat,
+                                family = gaussian(),
+                                REML = TRUE
+                                )
+                        }
+                    )
+models[[13]] <- list(form = log(Value) ~ s(DV, bs = 'ps', k = k) + Year,
+                    engine = 'gam',
+                    re = 'no',
+                    ar = 'no',
+                    poly = 'no',
+                    REML = 'yes',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) {
+                        mgcv::gam(form, data = dat,
+                                family = gaussian(),
+                                REML = TRUE
+                                )
+                        }
+                    )
+models[[14]] <- list(form = log(Value) ~ DV,
+                    engine = 'glmmTMB',
+                    re = 'no',
+                    ar = 'no',
+                    poly = 'no',
+                    REML = 'no',
+                    k = function(dat) min(10, length(unique(dat$DV))-2),
+                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                family = gaussian(),
+                                REML = FALSE
+                                )
+                    )
 
 
 
-fitModels <- function(dat, type, MODELLED_SETTINGS) {
-    dat %>% droplevels() %>% pull(ZoneName) %>% unique %>% print
+fitModels <- function(dat, type, MODELLED_SETTINGS, file_suffix) {
+    zone <- dat %>% droplevels() %>% pull(ZoneName) %>% unique %>% print
+    file_suffix <- paste0(file_suffix, "__", zone)
     dat <- dat %>% mutate(Value = ifelse(Value == 0, 0.05, Value))
     MODELS <- list()
     for (m in 1:length(models)) {
@@ -1233,6 +1323,8 @@ fitModels <- function(dat, type, MODELLED_SETTINGS) {
             suppressMessages() %>% suppressWarnings()
         MODELS[[m]]$Quantiles_p <- MODELS[[m]]$Residuals$p.value
     }
+    ## save all the models
+    save(MODELS, file = paste0(DATA_PATH, "modelled/MODELS_",file_suffix,".RData"))
     ## Check if any models worked
     wch <- which(sapply(MODELS, function(x) !is.null(x$mod)))
     if (length(wch)==0) return(list(mod = NULL)) 
@@ -1242,14 +1334,17 @@ fitModels <- function(dat, type, MODELLED_SETTINGS) {
     disp <- which(sapply(MODELS, function(x) x$Dispersion_p) > 0.05)
     outl <- which(sapply(MODELS, function(x) x$Outliers_p) > 0.05)
     quan <- which(sapply(MODELS, function(x) x$Quantiles_p) > 0.05)
+    ## Put more weight on uniformity than dispersion, outliers and quantiles
     tt <- table(c(rep(unif,3), disp, outl, quan))
-    cand_models <- which(tt == (tt)) 
+    ## select the model(s) that meet the assumptions best
+    cand_models <- as.numeric(names(tt))[which(tt == max(tt))] 
+    ## cand_models <- as.numeric(names(tt))[which(tt == (tt))] 
     ## Compare AIC
     aics <- sapply(MODELS[cand_models], function(x) x$AIC)
     ## check that AICs are not zero
     which_aic <- which(!is.na(aics))
     if (length(which_aic) ==0) return(list(mod = NULL)) #return(MODELS[[length(aics)]])
-    MODELS[[which.min(aics)]]
+    MODELS[[cand_models[which.min(aics)]]]
 }
 ## ----end
 

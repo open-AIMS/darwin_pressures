@@ -662,9 +662,12 @@ readRDS(file = paste0(DATA_PATH, "processed/wq_2012.RData")) %>%
 ### 2016-2022
 
 The 2016-2022 data contain both `Discrete` and `CFM` (Continuous Flow
-Management) data.  The `Discrete` data are collected via grab samples
-and typically are collected at specific locations repeatedly on an
-annual schedule. 
+Management) data.  I am not sure that I understand the distinction.
+Initially I thought that `Discrete` data were collected via
+individual, manual grab samples at specific locations repeatedly on an
+annual schedule.  However, given the very large number of Discrete
+samples in 2018, it is unlikely that this description is completely
+accurate.
 
 Whilst the relatively small number of discrete sampling locations does
 mean that the estimates are biased towards the sampling locations
@@ -745,11 +748,11 @@ struggling to come up with the logic to support this given the issues
 describe above.  There are clearly still "CFM" samples present in
 2018.
 
-![Spatio-temporal distribution of sampling locations between 2016 and 2022](../output/figures/map_wq__2016_2022.png){#fig-wq-2016-spatial}
+![Spatio-temporal distribution of discrete sampling locations between 2016 and 2022](../output/figures/map_wq__2016_2022.png){#fig-wq-2016-spatial}
 
-The following are all samples ("CFM" and "Discrete").
+The following are all samples (i.e. both "CFM" and "Discrete").
 
-![Spatial distribution of sampling locations between 2016 and 2022](../output/figures/map_wq__2016_2022_all.png){#fig-wq-2016-spatial1}
+![Spatial distribution of all sampling locations between 2016 and 2022](../output/figures/map_wq__2016_2022_all.png){#fig-wq-2016-spatial1}
 
 #### Data glimpse
 
@@ -763,8 +766,12 @@ readRDS(file = paste0(DATA_PATH, "processed/wq_2016.RData")) %>%
 
 ### 2018 alterations
 
+These data are purely 2018 samples that have been more curated (by
+Julia Fortune).  They are processed here the same as the 2016-2022
+data.  It is clear that these 'discrete' samples still do not always
+represent samples collected at discrete (and repeatedly sampled)
+stations.
 
-Processed the same as the 2016-2022 data.
 
 ```{r process data 2018 alterations, results='markdown', eval=FALSE}
 ```
@@ -783,9 +790,9 @@ Processed the same as the 2016-2022 data.
 ```{r process data 2018 alterations map, results='markdown', eval=FALSE}
 ```
 
-![Spatio-temporal distribution of sampling locations in 2018](../output/figures/map_wq__2018.png){#fig-wq-2018-spatial}
+![Spatio-temporal distribution of discrete sampling locations in 2018](../output/figures/map_wq__2018.png){#fig-wq-2018-spatial}
 
-![Spatio-temporal distribution of sampling locations in 2018](../output/figures/map_wq__2018_all.png){#fig-wq-2018_all-spatial}
+![Spatio-temporal distribution of all sampling locations in 2018](../output/figures/map_wq__2018_all.png){#fig-wq-2018_all-spatial}
 
 :::::
 
@@ -1373,6 +1380,29 @@ the responses (stressors).  Also notes that the temporal range of
 pressures is truncated to match that of the maximum temporal domain of
 the stressors data.
 
+<details><summary>View codes</summary>
+```{r EDA associations data prep function, results='markdown', eval=FALSE}
+```
+```{r EDA Routine associations data prep, results='markdown', eval=FALSE}
+```
+```{r EDA associations file append function, results='markdown', eval=FALSE}
+```
+```{r EDA associations file lag function, results='markdown', eval=FALSE}
+```
+```{r EDA fitSimpleGAM_resp function, results='markdown', eval=FALSE}
+```
+```{r EDA predSimpleGAM_resp function, results='markdown', eval=FALSE}
+```
+```{r EDA fitSimpleGAM_pres function, results='markdown', eval=FALSE}
+```
+```{r EDA predSimpleGAM_pres function, results='markdown', eval=FALSE}
+```
+```{r EDA associations dual plots function, results='markdown', eval=FALSE}
+```
+```{r EDA Routine dual plots, results='markdown', eval=FALSE}
+```
+</details>
+
 :::: panel-tabset
 
 ```{r EDA routine dual, results='asis', eval=TRUE, echo=FALSE}
@@ -1444,6 +1474,26 @@ data. Consequently, we can only explore simple models that explore the
 relationships between the time series and acknowledge that any
 inferred relationships may well be artefacts.
 
+<details><summary>View codes</summary>
+```{r EDA associations data prep function, results='markdown', eval=FALSE}
+```
+```{r EDA Routine associations data prep, results='markdown', eval=FALSE}
+```
+```{r EDA associations file append function, results='markdown', eval=FALSE}
+```
+```{r EDA associations file lag function, results='markdown', eval=FALSE}
+```
+```{r EDA associations modelled_settings_prior function, results='markdown', eval=FALSE}
+```
+```{r EDA associations simple_gam function, results='markdown', eval=FALSE}
+```
+```{r EDA associations fitModels function, results='markdown', eval=FALSE}
+```
+```{r EDA associations associations function, results='markdown', eval=FALSE}
+```
+```{r EDA Routine Associations, results='markdown', eval=FALSE}
+```
+</details>
 
 :::: panel-tabset
 
@@ -1605,6 +1655,29 @@ the responses (stressors).  Also notes that the temporal range of
 pressures is truncated to match that of the maximum temporal domain of
 the stressors data.
 
+<details><summary>View codes</summary>
+```{r EDA associations data prep function, results='markdown', eval=FALSE}
+```
+```{r EDA associations data prep, results='markdown', eval=FALSE}
+```
+```{r EDA associations file append function, results='markdown', eval=FALSE}
+```
+```{r EDA associations file lag function, results='markdown', eval=FALSE}
+```
+```{r EDA fitSimpleGAM_resp function, results='markdown', eval=FALSE}
+```
+```{r EDA predSimpleGAM_resp function, results='markdown', eval=FALSE}
+```
+```{r EDA fitSimpleGAM_pres function, results='markdown', eval=FALSE}
+```
+```{r EDA predSimpleGAM_pres function, results='markdown', eval=FALSE}
+```
+```{r EDA associations dual plots function, results='markdown', eval=FALSE}
+```
+```{r EDA dual plots, results='markdown', eval=FALSE}
+```
+</details>
+
 :::: panel-tabset
 
 ```{r EDA dual, results='asis', eval=TRUE, echo=FALSE}
@@ -1644,6 +1717,27 @@ for (j in FOCAL_RESPS) {
 
 
 ## Associations
+
+<details><summary>View codes</summary>
+```{r EDA associations data prep function, results='markdown', eval=FALSE}
+```
+```{r EDA associations data prep, results='markdown', eval=FALSE}
+```
+```{r EDA associations file append function, results='markdown', eval=FALSE}
+```
+```{r EDA associations file lag function, results='markdown', eval=FALSE}
+```
+```{r EDA associations modelled_settings_prior function, results='markdown', eval=FALSE}
+```
+```{r EDA associations simple_gam function, results='markdown', eval=FALSE}
+```
+```{r EDA associations fitModels function, results='markdown', eval=FALSE}
+```
+```{r EDA associations associations function, results='markdown', eval=FALSE}
+```
+```{r EDA Associations, results='markdown', eval=FALSE}
+```
+</details>
 
 :::: panel-tabset
 
@@ -1822,3 +1916,4 @@ for (j in FOCAL_RESPS) {
 ::::
 
 :::
+	
