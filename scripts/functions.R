@@ -454,45 +454,90 @@ modelled_settings_prior <- function(MEASURE, lag, units_lookup) {
 ## ---- EDA associations simple_gam function
 ## This function is applied to the response vs pressure data
 simple_gam <- function(data.EDA, MEASURE_, ylab, xlab, FILE_APPEND, FILE_LAG, j) {
-    g <- data.EDA %>%
-        ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
-        ## geom_point() +
-        geom_text(aes(label = as.numeric(factor(Year)))) +
-        ## geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
-        ##             method.args = list(method = "REML",
-        ##                                family = Gamma(link = 'log'))) +
-        ## scale_y_continuous(trans = scales::pseudo_log_trans()) 
-        geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
-                    method.args = list(method = "REML",
-                                       family = gaussian()),
-                    color = "blue",
-                    fill = "#0000FF50") +
-        ## scale_y_log10(scales::label_parse()(lab)) +
-        ## scale_x_continuous(scales::label_parse()(xlab)) +
-        scale_y_log10(ylab) +
-        scale_x_continuous(xlab) +
-        theme_bw() +
-        theme(strip.text.y = element_text(angle = 0),
-              strip.background = element_rect(fill = "#446e9b50"),
-              panel.spacing.x = unit("0.5", "cm"))
-    FACETS <- data.EDA %>% pull(ZoneName) %>% unique %>% length()
-    NCOL <- wrap_dims(FACETS, ncol = 3)[2]
-    NROW <- wrap_dims(FACETS, ncol = 3)[1]
-
-    p <- patchwork::wrap_plots( 
-                        g + facet_wrap(~ZoneName, scales='free', ncol = 3),
-                        g,
-                        ncol = 1,
-                        heights = c(2*NROW, 2*2)
-                    )
-    ggsave(filename = paste0(FIGS_PATH, "/gamPlots",
-                             FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png"),
-           p,
-           width = NCOL * 4,
-           height = NROW * 4,
-           dpi = 72) %>%
-        suppressMessages() %>%
-        suppressWarnings()
+    g <- try({
+        gg <- data.EDA %>%
+            ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
+            ## geom_point() +
+            geom_text(aes(label = as.numeric(factor(Year)))) +
+            ## geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+            ##             method.args = list(method = "REML",
+            ##                                family = Gamma(link = 'log'))) +
+            ## scale_y_continuous(trans = scales::pseudo_log_trans()) 
+            geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+                        method.args = list(method = "REML",
+                                           family = gaussian()),
+                        color = "blue",
+                        fill = "#0000FF50") +
+            ## scale_y_log10(scales::label_parse()(lab)) +
+            ## scale_x_continuous(scales::label_parse()(xlab)) +
+            scale_y_log10(ylab) +
+            scale_x_continuous(xlab) +
+            theme_bw() +
+            theme(strip.text.y = element_text(angle = 0),
+                  strip.background = element_rect(fill = "#446e9b50"),
+                  panel.spacing.x = unit("0.5", "cm"))
+        FACETS <- data.EDA %>% pull(ZoneName) %>% unique %>% length()
+        NCOL <- wrap_dims(FACETS, ncol = 3)[2]
+        NROW <- wrap_dims(FACETS, ncol = 3)[1]
+        
+        p <- patchwork::wrap_plots( 
+                            gg + facet_wrap(~ZoneName, scales='free', ncol = 3),
+                            gg,
+                            ncol = 1,
+                            heights = c(2*NROW, 2*2)
+                        )
+        ggsave(filename = paste0(FIGS_PATH, "/gamPlots",
+                                 FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png"),
+               p,
+               width = NCOL * 4,
+               height = NROW * 4,
+               dpi = 72) %>%
+            suppressMessages() %>%
+            suppressWarnings()
+    }, silent = TRUE)
+    if (any(class(g) == 'try-error')) {
+        g <- try({
+            gg <- data.EDA %>%
+                ggplot(aes(y = Value, x = !!sym(MEASURE_))) +
+                ## geom_point() +
+                geom_text(aes(label = as.numeric(factor(Year)))) +
+                ## geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+                ##             method.args = list(method = "REML",
+                ##                                family = Gamma(link = 'log'))) +
+                ## scale_y_continuous(trans = scales::pseudo_log_trans()) 
+                geom_smooth(method = 'gam', formula = y ~ s(x, bs = 'ps'),
+                            method.args = list(method = "REML",
+                                               family = gaussian()),
+                            color = "blue",
+                            fill = "#0000FF50") +
+                ## scale_y_log10(scales::label_parse()(lab)) +
+                ## scale_x_continuous(scales::label_parse()(xlab)) +
+                scale_y_continuous(ylab) +
+                scale_x_continuous(xlab) +
+                theme_bw() +
+                theme(strip.text.y = element_text(angle = 0),
+                      strip.background = element_rect(fill = "#446e9b50"),
+                      panel.spacing.x = unit("0.5", "cm"))
+            FACETS <- data.EDA %>% pull(ZoneName) %>% unique %>% length()
+            NCOL <- wrap_dims(FACETS, ncol = 3)[2]
+            NROW <- wrap_dims(FACETS, ncol = 3)[1]
+            
+            p <- patchwork::wrap_plots( 
+                                gg + facet_wrap(~ZoneName, scales='free', ncol = 3),
+                                gg,
+                                ncol = 1,
+                                heights = c(2*NROW, 2*2)
+                            )
+            ggsave(filename = paste0(FIGS_PATH, "/gamPlots",
+                                     FILE_APPEND,"__",j,"__",MEASURE_,FILE_LAG,".png"),
+                   p,
+                   width = NCOL * 4,
+                   height = NROW * 4,
+                   dpi = 72) %>%
+                suppressMessages() %>%
+                suppressWarnings()
+        }, silent = TRUE)
+    }
 }
 ## ----end
 
@@ -713,7 +758,18 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
             saveRDS(data.EDA.mod.sum,
                     file = paste0(DATA_PATH,"summarised/data.EDA",
                                      FILE_APPEND,"mod.sum__",j,"__",MEASURE_,".RData"))
-            
+
+            logTable <- read.csv(file = paste0(DATA_PATH, "modelled/logTable.csv"))
+            logTable <- logTable %>%
+                mutate(Complete = ifelse(Resps == j &
+                                         Preds == MEASURE &
+                                         Lags == ifelse(is.null(lag), 0, lag) &
+                                         Type == type,
+                                         'X',''))
+            write.csv(logTable, file = paste0(DATA_PATH, "modelled/logTable.csv"))
+            cat(paste0(j,",",MEASURE,',',ifelse(is.null(lag), 0, lag),',',type,'\n'),
+                file = paste0(DATA_PATH, "modelled/log.csv"),
+                append = TRUE)
         }
     }
 }

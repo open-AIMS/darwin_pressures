@@ -1,3 +1,7 @@
+## module load singularity
+## singularity exec -B .:/home/project ../darwin_pressures.sif R
+## ess-remote
+
 source('../scripts/functions.R')
 
 ## ---- EDA load lookups
@@ -15,6 +19,14 @@ FOCAL_PRESSURES <- var_lookup %>%
 ## ---- EDA load data
 data <- readRDS(file = paste0(DATA_PATH, "processed/data.RData"))
 ## ----end
+
+## ---- logTable
+logTable <<- expand.grid(Resps = FOCAL_RESPS, Preds = FOCAL_PRESSURES$Measure, Lags = 0:2, Type = c('Routine', 'Discrete'))
+write.csv(logTable, file = paste0(DATA_PATH, "modelled/logTable.csv"))
+cat(paste0("Resps,Preds,Lag,Type\n"),
+    file = paste0(DATA_PATH, "modelled/log.csv"))
+## ----end
+
 
 ## Routine Samples ===================
 
