@@ -1571,8 +1571,8 @@ for (j in FOCAL_RESPS) {
             cat(paste0("\n##### Lag ", k, "\n"))
             if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
             summary_table(j, MEASURE, k, routine = TRUE) %>%
-                save_kable(file = paste0(TABS_PATH,"/tab.routine__",j,"__", MEASURE,k,".html"),
-                           self_contained = F)
+                 save_kable(file = paste0(TABS_PATH,"/tab.routine__",j,"__", MEASURE,k,".html"),
+                            self_contained = F)
         }
         cat(paste0("\n:::::::\n\n"))
         
@@ -1916,4 +1916,5 @@ for (j in FOCAL_RESPS) {
 ::::
 
 :::
+	
 	

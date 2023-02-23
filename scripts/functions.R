@@ -629,6 +629,8 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 mutate(Mod_info = map(.x = data,
                                       .f = ~fitModels(.x, type, MODELLED_SETTINGS, file_suffix) %>%
                                       suppressWarnings()),
+                       Mod_Number = map(.x = Mod_info,
+                                        .f = ~ .x$number),
                        Mod = map(.x = Mod_info,
                                  .f = ~.x$mod),
                        ## ModLin = map(.x = data,
@@ -695,7 +697,22 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                                                  tr <- try(emmeansCalc(.x, .y, MEASURE_), silent = TRUE)
                                                  if (any(class(tr) == 'try-error')) return(NULL)
                                                  tr
-                                                } else NULL}),
+                                             } else NULL}),
+                       CohenD = map(.x = Emmeans,
+                                        .f = ~ {if(!is.null(.x)) {
+                                                    tr <- try(cohenD(.x), silent = TRUE)
+                                                    if (any(class(tr) == 'try-error')) return(NULL)
+                                                    tr
+                                                } else NULL}
+                                        ),
+                       R = map2(.x = R2,
+                                .y = Emmeans,
+                                .f = ~ {if(!is.null(.x)) {
+                                            wch_min <- which.min(.y$response)
+                                            wch_max <- which.max(.y$response)
+                                            polarity <- ifelse(wch_max > wch_min, 1, -1)
+                                            polarity * sqrt(.x[nrow(.x),1])
+                                        } else NULL}),
                        Part = map2(.x = Mod,
                                    .y = data,
                                    .f = ~ {if(!is.null(.x)) {
@@ -754,7 +771,9 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                        height = NROW * 3,
                        dpi = 72)
 
-            data.EDA.mod.sum <- data.EDA.mod %>% dplyr::select(Zone, ZoneName, Params, Params2,R2, Emmeans)
+            data.EDA.mod.sum <- data.EDA.mod %>%
+                dplyr::select(Zone, ZoneName,
+                              Mod_Number, Params, Params2, R2, CohenD, R, Emmeans)
             saveRDS(data.EDA.mod.sum,
                     file = paste0(DATA_PATH,"summarised/data.EDA",
                                      FILE_APPEND,"mod.sum__",j,"__",MEASURE_,".RData"))
@@ -772,6 +791,21 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
                 append = TRUE)
         }
     }
+}
+## ----end
+
+## ---- EDA cohenD function
+## https://www.simplypsychology.org/effect-size.html#:~:text=Cohen%20suggested%20that%20d%20%3D%200.2,if%20it%20is%20statistically%20significant.
+## https://en.wikipedia.org/wiki/Effect_size
+##https://www.socscistatistics.com/effectsize/default3.aspx
+cohenD <- function(x) {
+    ## Cohen's effect size
+    wch_min <- which.min(x$response)
+    wch_max <- which.max(x$response)
+    SD1 <- x$SE[wch_min] * sqrt(x$df[wch_min])
+    SD2 <- x$SE[wch_max] * sqrt(x$df[wch_max])
+    SDp <- sqrt((SD1^2 + SD2^2)/2)
+    (x$response[wch_max] - x$response[wch_min])/SDp
 }
 ## ----end
 
@@ -1167,19 +1201,23 @@ fitModels_old <- function(dat, type, MODELLED_SETTINGS) {
 ## ----end
 ## ---- EDA associations fitModels function
 models <- list()
-models[[1]] <- list(form = Value ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
-                    engine = 'glmmTMB',
-                    re = 'yes',
-                    ar = 'yes',
-                    poly = 'yes',
-                    REML = 'yes',
-                    k = function(dat) min(10, length(unique(dat$DV))-2),
-                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
-                                family = Gamma(link = "log"),
-                                REML = TRUE
-                                )
-                    )
-models[[2]] <- list(form = Value ~ poly(DV,3) + (1|WQ_SITE),
+models[[1]] <- list(
+    number = 1,
+    form = Value ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
+    engine = 'glmmTMB',
+    re = 'yes',
+    ar = 'yes',
+    poly = 'yes',
+    REML = 'yes',
+    k = function(dat) min(10, length(unique(dat$DV))-2),
+    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+                                                family = Gamma(link = "log"),
+                                                REML = TRUE
+                                                )
+)
+models[[2]] <- list(
+    number = 2,
+    form = Value ~ poly(DV,3) + (1|WQ_SITE),
                     engine = 'glmmTMB',
                     re = 'yes',
                     ar = 'no',
@@ -1191,7 +1229,9 @@ models[[2]] <- list(form = Value ~ poly(DV,3) + (1|WQ_SITE),
                                 REML = TRUE
                                 )
                     )
-models[[3]] <- list(form = Value ~ DV + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
+models[[3]] <- list(
+    number = 3,
+    form = Value ~ DV + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
                     engine = 'glmmTMB',
                     re = 'yes',
                     ar = 'yes',
@@ -1203,7 +1243,9 @@ models[[3]] <- list(form = Value ~ DV + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_S
                                 REML = TRUE
                                 )
                     )
-models[[4]] <- list(form = Value ~ DV + (1|WQ_SITE),
+models[[4]] <- list(
+    number = 4,
+    form = Value ~ DV + (1|WQ_SITE),
                     engine = 'glmmTMB',
                     re = 'yes',
                     ar = 'no',
@@ -1215,7 +1257,9 @@ models[[4]] <- list(form = Value ~ DV + (1|WQ_SITE),
                                 REML = TRUE
                                 )
                     )
-models[[5]] <- list(form = Value ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're'),
+models[[5]] <- list(
+    number = 5,
+    form = Value ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're'),
                     engine = 'gam',
                     re = 'yes',
                     ar = 'no',
@@ -1229,7 +1273,9 @@ models[[5]] <- list(form = Value ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, b
                                 )
                         }
                     )
-models[[6]] <- list(form = Value ~ s(DV, bs = 'ps', k = k) + Year,
+models[[6]] <- list(
+    number = 6,
+    form = Value ~ s(DV, bs = 'ps', k = k) + Year,
                     engine = 'gam',
                     re = 'no',
                     ar = 'no',
@@ -1243,7 +1289,9 @@ models[[6]] <- list(form = Value ~ s(DV, bs = 'ps', k = k) + Year,
                                 )
                         }
                     )
-models[[7]] <- list(form = Value ~ DV,
+models[[7]] <- list(
+    number = 7,
+    form = Value ~ DV,
                     engine = 'glmmTMB',
                     re = 'no',
                     ar = 'no',
@@ -1255,94 +1303,108 @@ models[[7]] <- list(form = Value ~ DV,
                                 REML = FALSE
                                 )
                     )
-models[[8]] <- list(form = log(Value) ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
-                    engine = 'glmmTMB',
-                    re = 'yes',
-                    ar = 'yes',
-                    poly = 'yes',
-                    REML = 'yes',
-                    k = function(dat) min(10, length(unique(dat$DV))-2),
-                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
-                                family = gaussian(),
-                                REML = TRUE
-                                )
-                    )
-models[[9]] <- list(form = log(Value) ~ poly(DV,3) + (1|WQ_SITE),
-                    engine = 'glmmTMB',
-                    re = 'yes',
-                    ar = 'no',
-                    poly = 'yes',
-                    REML = 'yes',
-                    k = function(dat) min(10, length(unique(dat$DV))-2),
-                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
-                                family = gaussian(),
-                                REML = TRUE
-                                )
-                    )
-models[[10]] <- list(form = log(Value) ~ DV + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
-                    engine = 'glmmTMB',
-                    re = 'yes',
-                    ar = 'yes',
-                    poly = 'no',
-                    REML = 'yes',
-                    k = function(dat) min(10, length(unique(dat$DV))-2),
-                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
-                                family = gaussian(),
-                                REML = TRUE
-                                )
-                    )
-models[[11]] <- list(form = log(Value) ~ DV + (1|WQ_SITE),
-                    engine = 'glmmTMB',
-                    re = 'yes',
-                    ar = 'no',
-                    poly = 'no',
-                    REML = 'yes',
-                    k = function(dat) min(10, length(unique(dat$DV))-2),
-                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
-                                family = gaussian(),
-                                REML = TRUE
-                                )
-                    )
-models[[12]] <- list(form = log(Value) ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're'),
-                    engine = 'gam',
-                    re = 'yes',
-                    ar = 'no',
-                    poly = 'no',
-                    REML = 'yes',
-                    k = function(dat) min(10, length(unique(dat$DV))-2),
-                    call = function(form, dat) {
-                        mgcv::gam(form, data = dat,
-                                family = gaussian(),
-                                REML = TRUE
-                                )
-                        }
-                    )
-models[[13]] <- list(form = log(Value) ~ s(DV, bs = 'ps', k = k) + Year,
-                    engine = 'gam',
-                    re = 'no',
-                    ar = 'no',
-                    poly = 'no',
-                    REML = 'yes',
-                    k = function(dat) min(10, length(unique(dat$DV))-2),
-                    call = function(form, dat) {
-                        mgcv::gam(form, data = dat,
-                                family = gaussian(),
-                                REML = TRUE
-                                )
-                        }
-                    )
-models[[14]] <- list(form = log(Value) ~ DV,
-                    engine = 'glmmTMB',
-                    re = 'no',
-                    ar = 'no',
-                    poly = 'no',
-                    REML = 'no',
-                    k = function(dat) min(10, length(unique(dat$DV))-2),
-                    call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
-                                family = gaussian(),
-                                REML = FALSE
-                                )
-                    )
+## models[[8]] <- list(
+##     number = 8,
+##     form = log(Value) ~ poly(DV,3) + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
+##                     engine = 'glmmTMB',
+##                     re = 'yes',
+##                     ar = 'yes',
+##                     poly = 'yes',
+##                     REML = 'yes',
+##                     k = function(dat) min(10, length(unique(dat$DV))-2),
+##                     call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+##                                 family = gaussian(),
+##                                 REML = TRUE
+##                                 )
+##                     )
+## models[[9]] <- list(
+##     number = 9,
+##     form = log(Value) ~ poly(DV,3) + (1|WQ_SITE),
+##                     engine = 'glmmTMB',
+##                     re = 'yes',
+##                     ar = 'no',
+##                     poly = 'yes',
+##                     REML = 'yes',
+##                     k = function(dat) min(10, length(unique(dat$DV))-2),
+##                     call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+##                                 family = gaussian(),
+##                                 REML = TRUE
+##                                 )
+##                     )
+## models[[10]] <- list(
+##     number = 10,
+##     form = log(Value) ~ DV + (1|WQ_SITE) + ar1(factor(Year) -1 | WQ_SITE),
+##                     engine = 'glmmTMB',
+##                     re = 'yes',
+##                     ar = 'yes',
+##                     poly = 'no',
+##                     REML = 'yes',
+##                     k = function(dat) min(10, length(unique(dat$DV))-2),
+##                     call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+##                                 family = gaussian(),
+##                                 REML = TRUE
+##                                 )
+##                     )
+## models[[11]] <- list(
+##     number = 11,
+##     form = log(Value) ~ DV + (1|WQ_SITE),
+##                     engine = 'glmmTMB',
+##                     re = 'yes',
+##                     ar = 'no',
+##                     poly = 'no',
+##                     REML = 'yes',
+##                     k = function(dat) min(10, length(unique(dat$DV))-2),
+##                     call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+##                                 family = gaussian(),
+##                                 REML = TRUE
+##                                 )
+##                     )
+## models[[12]] <- list(
+##     number = 12,
+##     form = log(Value) ~ s(DV, bs = 'ps', k = k) + Year + s(WQ_SITE, bs = 're'),
+##                     engine = 'gam',
+##                     re = 'yes',
+##                     ar = 'no',
+##                     poly = 'no',
+##                     REML = 'yes',
+##                     k = function(dat) min(10, length(unique(dat$DV))-2),
+##                     call = function(form, dat) {
+##                         mgcv::gam(form, data = dat,
+##                                 family = gaussian(),
+##                                 REML = TRUE
+##                                 )
+##                         }
+##                     )
+## models[[13]] <- list(
+##     number = 13,
+##     form = log(Value) ~ s(DV, bs = 'ps', k = k) + Year,
+##                     engine = 'gam',
+##                     re = 'no',
+##                     ar = 'no',
+##                     poly = 'no',
+##                     REML = 'yes',
+##                     k = function(dat) min(10, length(unique(dat$DV))-2),
+##                     call = function(form, dat) {
+##                         mgcv::gam(form, data = dat,
+##                                 family = gaussian(),
+##                                 REML = TRUE
+##                                 )
+##                         }
+##                     )
+## models[[14]] <- list(
+##     number = 14,
+##     form = log(Value) ~ DV,
+##                     engine = 'glmmTMB',
+##                     re = 'no',
+##                     ar = 'no',
+##                     poly = 'no',
+##                     REML = 'no',
+##                     k = function(dat) min(10, length(unique(dat$DV))-2),
+##                     call = function(form, dat) glmmTMB::glmmTMB(form, data = dat,
+##                                 family = gaussian(),
+##                                 REML = FALSE
+##                                 )
+##                     )
 
 
 
@@ -1382,7 +1444,9 @@ fitModels <- function(dat, type, MODELLED_SETTINGS, file_suffix) {
     ## save all the models
     save(MODELS, file = paste0(DATA_PATH, "modelled/MODELS_",file_suffix,".RData"))
     ## Check if any models worked
+    ## WCH <- 1:length(MODELS)
     wch <- which(sapply(MODELS, function(x) !is.null(x$mod)))
+    ## WCH <- WCH[wch]
     if (length(wch)==0) return(list(mod = NULL)) 
     MODELS <- MODELS[wch]
     ## Which have acceptable diagnostics
@@ -1394,6 +1458,7 @@ fitModels <- function(dat, type, MODELLED_SETTINGS, file_suffix) {
     tt <- table(c(rep(unif,3), disp, outl, quan))
     ## select the model(s) that meet the assumptions best
     cand_models <- as.numeric(names(tt))[which(tt == max(tt))] 
+    ## WCH <- WCH[cand_models]
     ## cand_models <- as.numeric(names(tt))[which(tt == (tt))] 
     ## Compare AIC
     aics <- sapply(MODELS[cand_models], function(x) x$AIC)
@@ -1474,13 +1539,26 @@ summary_table <- function(j, MEASURE, k, routine = TRUE) {
         return(cat(paste("\n\n", file, "does not exist.\n")))
     }
     data.EDA.mod.sum <- readRDS(file = file)
+    data.EDA.mod.sum <- data.EDA.mod.sum %>%
+        mutate(ZoneName = paste0(Zone,'.',ZoneName))
 
     if (all(sapply(data.EDA.mod.sum$Params, is.null)))
         return(cat(paste("\n\n no valid models resulted.\n")))
-        
+
+    ## get the individual models and extract the ZoneName and model number
+
+    ## rout <- ifelse(routine == TRUE, 'routine', '')
+    ## files <- list.files(path = paste0(DATA_PATH, "modelled"),
+    ##                     pattern = paste0("MODELS_.",rout,".__",j,'__',MEASURE, k,'__.*'),
+    ##                     full.names = TRUE)
+    ## load(files[1])
+    ## file <- paste0(DATA_PATH,"summarised/data.EDA.routine.mod__",
+    ##                j,"__",MEASURE,k,".RData")
+    ## a <- readRDS(file)
+    
     R2 <- data.EDA.mod.sum %>%
-        mutate(R2c = map(.x = R2, .f = ~ .x[3,1])) %>%
-        mutate(R2m = map(.x = R2, .f = ~ .x[3,2])) %>%
+        mutate(R2c = map(.x = R2, .f = ~ .x[nrow(.x),1])) %>%
+        mutate(R2m = map(.x = R2, .f = ~ .x[nrow(.x),2])) %>%
         dplyr::select(ZoneName, R2c, R2m) %>%
         unnest(c(R2c, R2m)) %>%
         pivot_longer(cols = c(R2c, R2m),
@@ -1503,30 +1581,62 @@ summary_table <- function(j, MEASURE, k, routine = TRUE) {
         mutate(response = ifelse(is.infinite(response), NA, response)) %>%
         {split(.$response, .$ZoneName)}
 
+    EffectSize <- data.EDA.mod.sum %>%
+        dplyr::select(ZoneName, R, CohenD) %>%
+        unnest(c(R, CohenD)) %>%
+        mutate(CohenD = ifelse(R<0, -1 * CohenD, CohenD),
+               ES = ifelse(abs(R) < abs(CohenD), R, CohenD)) %>%
+        mutate(across(c(R, CohenD, ES), ~round(.x, 3))) %>%
+        rename(`Effect Size__R` = R,
+               `Effect Size__CohenD` = CohenD,
+               `Effect Size__ES` = ES
+               ) 
+    
     ## Remove any that have try-catch Params2 values
     wch <- sapply(data.EDA.mod.sum$Params2, function(x) any(class(x) != "try-error")) 
     data.EDA.mod.sum <- data.EDA.mod.sum[wch,]
+    ## param_table <- data.EDA.mod.sum %>%
+    ##     dplyr::select(ZoneName, Mod_Number, Params2) %>%
+    ##     unnest(c(Mod_Number, Params2)) 
     param_table <- data.EDA.mod.sum %>%
         dplyr::select(ZoneName, Params2) %>%
-        unnest(Params2) 
+        unnest(c(Params2)) 
 
+    mod_num <- data.EDA.mod.sum %>%
+        dplyr::select(ZoneName, Mod_Number) %>%
+        unnest(c(Mod_Number)) 
+    
     param_table2 <-
         as_tibble(param_table) %>%
-        mutate(term = str_replace(term, 'sd__', "")) %>%
+        dplyr::select(-edf, -ref.df) %>%
+        mutate(
+            effect = ifelse(is.na(effect),
+                           ifelse(str_detect(term, 's\\(WQ_SITE\\)'), "ran_pars", 'fixed'),
+                            effect),
+            group = ifelse(is.na(group),
+                           ifelse(str_detect(term, 's\\(WQ_SITE\\)'), "WQ_SITE", NA),
+                            group),
+            term = str_replace(term, 'sd__', ""),
+               term = str_replace(term, 's\\(WQ_SITE\\)', "Site (SD)"),
+               estimate = ifelse(!is.na(statistic), statistic, estimate)) %>%
         ## mutate(Parameter = paste(insight::format_value(estimate,),
         ##                           insight::format_ci(conf.low, conf.high, ci = NULL))) %>%
+        ## mutate(Parameter = ifelse(is.null(estimate),
+        ##                           NA,
+        ##                           sprintf("% 0.3f\n[% 2.3f,% 2.3f]", estimate,conf.low, conf.high))) %>%
         mutate(Parameter = sprintf("% 0.3f\n[% 2.3f,% 2.3f]", estimate,conf.low, conf.high)) %>%
         mutate(Parameter = str_replace_all(Parameter, "NA|NaN|Inf","")) %>%
+        mutate(Parameter = str_replace_all(Parameter, "\\n\\[ , \\]","")) %>%
         mutate(Parameter = replace_na(Parameter, "")) %>%
         ## mutate(Parameter = str_glue("{format(estimate,justify = 'left', digits = 3, scientific = FALSE)}")) %>%
         dplyr::select(-std.error, -statistic, -p.value, -estimate, -conf.low, -conf.high) %>% 
-        full_join(R2) %>%
+        full_join(R2 %>% dplyr::select(-group)) %>%
         ## filter(!Stat %in% c('z', 'df_error', 'p', 'SE', 'CI')) %>%
         filter(!(term == "(Intercept)" & effect == "fixed")) %>% #dplyr::select(-Parameter) %>% 
         dplyr::select(-component) %>%
         mutate(term = paste0(group,term)) %>%
         ## arrange(ZoneName, effect, term) %>%
-        mutate(term = str_replace(term, "WQ_SITE\\(Intercept\\)", "Site (SD)")) %>%
+        mutate(term = str_replace(term, "WQ_SITE.*", "Site (SD)")) %>%
         dplyr::select(-group) %>%
         ## pivot_wider(id_cols = everything(),
         ##             names_from = Stat,
@@ -1546,18 +1656,37 @@ summary_table <- function(j, MEASURE, k, routine = TRUE) {
                     names_from = Name,
                     values_from = Parameter) %>%
         arrange(ZoneName) %>%
-        rename(Zone = ZoneName) %>%
+        full_join(mod_num) %>%
+        full_join(EffectSize) %>%
+        dplyr::select(ZoneName, Mod_Number, everything()) %>% 
+        rename(Zone = ZoneName, Model = Mod_Number) %>%
         suppressMessages() %>%
         suppressWarnings()
 
     library(kableExtra)
-    ##library(webshot)
+    ##library(webshot) 
     param_table2 %>%
         full_join(Emmeans %>% rename(Zone = ZoneName)) %>%
         dplyr::rename(Total__Trend = Emmeans) %>%
         dplyr::mutate(Total__Trend = "") %>% 
                                         #dplyr::select(-Trend) %>%
         mutate(across(matches("DV|Year|Random"), ~replace_na(.x, " "))) %>%
+        dplyr::select(Zone, Model,
+                      matches("s\\(DV\\)"),
+                      matches("__DV"),
+                      matches(".*Linear.*"),
+                      matches(".*Quadratic.*"),
+                      matches(".*Cubic.*"),
+                      matches("R2c"),
+                      matches("Site"),
+                      matches("R2m"),
+                      everything()) %>%
+        mutate(across(`Effect Size__R`,
+                      ~cell_spec(.x, background = cohenRColours(.x)))
+               ) %>%
+        mutate(across(c(`Effect Size__CohenD`, `Effect Size__ES`),
+                      ~cell_spec(.x, background = cohenDColours(.x)))
+               ) %>%
         kable(escape = FALSE) %>%
         column_spec(ncol(param_table2)+1, image = spec_plot(EM, same_lim = FALSE)) %>%
         header_separate(sep="__") %>%
@@ -1577,3 +1706,33 @@ summary_table <- function(j, MEASURE, k, routine = TRUE) {
 ## ----end
 
 
+## https://www.learnui.design/tools/data-color-picker.html#divergent
+cohenRColours <- function(x) {
+    case_when(x < -0.5 ~ "#de425b",  #Large
+              x < -0.3 ~ "#f48358",  #Madium
+              x < -0.1 ~ "#fcbe6e",  #Small
+              x < 0    ~ "#FFFFFF",  "No effect"
+              x < 0.1  ~ "#FFFFFF",  "No effect"
+              x < 0.3 ~  "#c5d275",  #Small
+              x < 0.5 ~  "#89b050",  #Medium
+              x >= 0.5 ~ "#488f31")  #Large
+    }
+
+cohenDColours <- function(x) {
+    case_when(
+        x < -2   ~ "#de425b",    #Huge
+        x < -1.2 ~ "#e4604e",  #Very large
+        x < -0.8 ~ "#ef8250",  #Large
+        x < -0.5 ~ "#f7a258",  #Medium
+        x < -0.2 ~ "#FCC267",  #Small
+        x < -0.1 ~ "#FEE17E",  #Very small
+        x < 0    ~ "#FFFFFF",  #No effect
+        x < 0.1  ~ "#FFFFFF",  #No effect
+        x < 0.2  ~ "#d6ec91",  #Very small
+        x < 0.5 ~  "#aed987",  #Small
+        x < 0.8 ~  "#88c580",  #Medium
+        x < 1.2 ~  "#63b179",  #Large
+        x < 2 ~    "#3d9c73",  #Very Large
+        x >= 2 ~   "#488f31",  #Huge
+        )
+    }
