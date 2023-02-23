@@ -1711,8 +1711,8 @@ cohenRColours <- function(x) {
     case_when(x < -0.5 ~ "#de425b",  #Large
               x < -0.3 ~ "#f48358",  #Madium
               x < -0.1 ~ "#fcbe6e",  #Small
-              x < 0    ~ "#FFFFFF",  "No effect"
-              x < 0.1  ~ "#FFFFFF",  "No effect"
+              x < 0    ~ "#FFFFFF",  #"No effect"
+              x < 0.1  ~ "#FFFFFF",  #"No effect"
               x < 0.3 ~  "#c5d275",  #Small
               x < 0.5 ~  "#89b050",  #Medium
               x >= 0.5 ~ "#488f31")  #Large
