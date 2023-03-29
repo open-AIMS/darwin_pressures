@@ -13,6 +13,7 @@ library(foreach)
 library(doParallel)
 library(furrr)
 library(kableExtra)
+library(gbm)
 sf_use_s2(FALSE)
 ## ----end
 
@@ -159,6 +160,7 @@ EDA_pressures <- function(dat, var) {
 file_append <- function(type) {
     case_when(
         type == "Discrete" ~ ".",
+        type == "All" ~ ".all.",
         type == "Routine" ~ ".routine."
     )
 }
@@ -207,6 +209,29 @@ assoc_data_pred <- function(data, type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURE
             mutate(Value = !!sym(j),
                    Measure = j,
                    Value = ifelse(Value == 0, 0.01, Value))
+        if (type == "All") {
+            ## calculate discrete and CFM averages separately per ZoneName/Year
+            ## then average the sources together per ZoneName/Year
+            data.EDA.resp <- data %>%
+                droplevels() %>%
+                filter(!is.na(!!sym(j))) %>%
+                group_by(ZoneName, Zone, Year, Source) %>%
+                summarise(!!sym(j) := mean(!!sym(j)),
+                          Date = mean(Date)) %>%
+                ungroup() %>%
+                group_by(ZoneName, Zone, Year) %>%
+                summarise(!!sym(j) := mean(!!sym(j)),
+                          Date = mean(Date)) %>%
+                mutate(WQ_ID = 1, WQ_SITE = 1) %>%
+                dplyr::select(WQ_ID, WQ_SITE, !!j, ZoneName, Zone, Year, Date) %>%
+                distinct() %>%
+                mutate(Value = !!sym(j),
+                       Measure = j,
+                       Value = ifelse(Value == 0, 0.01, Value)) %>%
+                suppressMessages() %>%
+                suppressWarnings()
+        }
+        
         saveRDS(data.EDA.resp,
                 file = paste0(DATA_PATH, "summarised/data.EDA",
                               FILE_APPEND,"resp__", j, ".RData"))
@@ -289,6 +314,28 @@ assoc_data_pred <- function(data, type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURE
                               !!ID, !!SITE_ID) %>%
                 distinct() %>%
                 mutate(Value = !!sym(j)) 
+            if (type == "All") {
+                data.EDA <- data %>%
+                    droplevels() %>%
+                    filter(!is.na(!!sym(j)), !is.na(!!sym(MEASURE))) %>%
+                    group_by(ZoneName, Zone, Year, Source) %>%
+                    summarise(across(c(!!j, !!MEASURE, !!LAG_MEASURE, !!ID, !!SITE_ID, Date),
+                                     ~mean(.x, na.rm = TRUE))) %>%
+                    ungroup() %>%
+                    group_by(ZoneName, Zone, Year) %>%
+                    summarise(across(c(!!j, !!MEASURE, !!LAG_MEASURE, !!ID, !!SITE_ID, Date),
+                                     ~mean(.x, na.rm = TRUE))) %>%
+                    mutate(WQ_ID = 1, WQ_SITE = 1) %>%
+                    dplyr::select(WQ_ID, WQ_SITE, !!j, ZoneName, Zone, Year, Date,
+                                  !!MEASURE, !!LAG_MEASURE,
+                                  !!ID, !!SITE_ID) %>%
+                    distinct() %>%
+                    mutate(Value = !!sym(j),
+                           Measure = j,
+                           Value = ifelse(Value == 0, 0.01, Value)) %>%
+                    suppressMessages() %>%
+                    suppressWarnings()
+            }
             saveRDS(data.EDA,
                     file = paste0(DATA_PATH, "summarised/data.EDA",
                                   FILE_APPEND,"__", j, "__", MEASURE, ".RData"))
@@ -553,8 +600,8 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
         ylab <- units_lookup %>%
             filter(Measure == {{j}}) %>%
             pull(TableLabel)
-        ## for (i in 1:nrow(FOCAL_PRESSURES)) {
-        foreach (i = 1:nrow(FOCAL_PRESSURES)) %dopar% {
+        for (i in 1:nrow(FOCAL_PRESSURES)) {
+        ## foreach (i = 1:nrow(FOCAL_PRESSURES)) %dopar% {
         ## foreach(i = 27:29) %do% {
         ## for (i in 20:29) {
         ## for (i in 29) {
@@ -616,7 +663,8 @@ associations <- function(type = "Discrete", FOCAL_RESPS, FOCAL_PRESSURES, lag = 
 
             ## Fit models
             data.EDA.mod <- data.EDA %>%
-                mutate(DV = !!sym(MEASURE_)) %>%
+                mutate(DV = !!sym(MEASURE_),
+                       Zone = as.character(Zone)) %>%    ##added when adding type == 'All'
                 filter(!is.na(DV)) %>%
                 ## Add a Whole Harbour Group
                 { if (max(.$DV) > 1e5) mutate(.,DV = DV/1e5) else . } %>%
@@ -1526,14 +1574,18 @@ emmeansCalc <- function(mod, dat, DV) {
 ## ----end
 
 ## ---- EDA associations summary table
-summary_table <- function(j, MEASURE, k, routine = TRUE) {
-    if (routine == TRUE) {
-            file <- paste0(DATA_PATH,"summarised/data.EDA.routine.mod.sum__",
-                           j,"__",MEASURE,k,".RData")
-        } else {
-            file <- paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",
-                           j,"__",MEASURE,k,".RData")
-        }
+summary_table <- function(j, MEASURE, k, type = "Routine") {
+    if (type == 'Routine') {
+        file <- paste0(DATA_PATH,"summarised/data.EDA.routine.mod.sum__",
+                       j,"__",MEASURE,k,".RData")
+    } else if (type == "" | type == "Discrete") {
+        file <- paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",
+                       j,"__",MEASURE,k,".RData")
+    } else {
+        file <- paste0(DATA_PATH,"summarised/data.EDA.all.mod.sum__",
+                       j,"__",MEASURE,k,".RData")
+    }
+
     
     if (!file.exists(file)) {
         return(cat(paste("\n\n", file, "does not exist.\n")))
@@ -1600,7 +1652,9 @@ summary_table <- function(j, MEASURE, k, routine = TRUE) {
     ##     unnest(c(Mod_Number, Params2)) 
     param_table <- data.EDA.mod.sum %>%
         dplyr::select(ZoneName, Params2) %>%
-        unnest(c(Params2)) 
+        unnest(c(Params2)) %>%
+        ## add group variable if it is not present (all non-hierarchical models)
+        bind_rows(tibble(group = character()))
 
     mod_num <- data.EDA.mod.sum %>%
         dplyr::select(ZoneName, Mod_Number) %>%
@@ -1608,7 +1662,7 @@ summary_table <- function(j, MEASURE, k, routine = TRUE) {
     
     param_table2 <-
         as_tibble(param_table) %>%
-        dplyr::select(-edf, -ref.df) %>%
+        dplyr::select(-one_of("edf", "ref.df")) %>%
         mutate(
             effect = ifelse(is.na(effect),
                            ifelse(str_detect(term, 's\\(WQ_SITE\\)'), "ran_pars", 'fixed'),
@@ -1708,7 +1762,9 @@ summary_table <- function(j, MEASURE, k, routine = TRUE) {
 
 ## https://www.learnui.design/tools/data-color-picker.html#divergent
 cohenRColours <- function(x) {
-    case_when(x < -0.5 ~ "#de425b",  #Large
+    case_when(
+        is.na(x) ~ "#FFFFFF",
+        x < -0.5 ~ "#de425b",  #Large
               x < -0.3 ~ "#f48358",  #Madium
               x < -0.1 ~ "#fcbe6e",  #Small
               x < 0    ~ "#FFFFFF",  #"No effect"
@@ -1720,6 +1776,7 @@ cohenRColours <- function(x) {
 
 cohenDColours <- function(x) {
     case_when(
+        is.na(x) ~ "#FFFFFF",
         x < -2   ~ "#de425b",    #Huge
         x < -1.2 ~ "#e4604e",  #Very large
         x < -0.8 ~ "#ef8250",  #Large

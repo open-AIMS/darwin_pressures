@@ -149,6 +149,58 @@ cat(paste0("Resps,Preds,Lag,Type\n"),
     }
 }
 
+## All samples
+## Temporal Trends
+{
+    ## Responses
+    {
+        ## ---- EDA All
+        ## calculate discrete and CFM averages separately per ZoneName/Year
+        ## then average the sources together per ZoneName/Year
+        data.EDA.all <- 
+            data %>%
+            dplyr::select(WQ_ID, Zone, ZoneName, Latitude, Longitude, Year, Date, Source,
+                          PO4, DO, Turbidity, Chla, NH3, NOx) %>%
+            distinct() %>%
+            pivot_longer(cols = c(PO4, DO, Turbidity, Chla, NH3, NOx)) %>%
+            filter(!is.na(value)) %>%
+            group_by(ZoneName, Zone, Year, Source, name) %>%
+            summarise(value = mean(value),
+                      Date = mean(Date),
+                      Latitude = mean(Latitude),
+                      Longitude = mean(Longitude)) %>%
+            ungroup() %>%
+            group_by(ZoneName, Zone, Year, name) %>%
+            summarise(value = mean(value),
+                      Date = mean(Date),
+                      Latitude = mean(Latitude),
+                      Longitude = mean(Longitude)) %>%
+            mutate(WQ_ID = 1, WQ_SITE = 1) %>%
+            mutate(value = ifelse(value==0, 0.001, value)) %>%
+            group_by(name) %>%
+            nest() %>%
+            mutate(EDA = map2(.x = data, .y = name, 
+                              ~ EDA(.x, .y)))
+        ## ----end
+        ## ---- EDA All save
+        set_cores_furrr()
+        future_walk2(.x = data.EDA.all$name,
+              .y = data.EDA.all$EDA,
+              ~ggsave(filename = paste0(FIGS_PATH, '/EDA_all_',.x, '.png'),
+                      .y,
+                      width = 10,
+                      height = 8,
+                      dpi = 72
+                     )
+              )
+        ## ----end
+    }
+    ## Pressures - these are invariant to response scale
+    ## and thus are only calculated once - see below
+}
+
+
+
 ## Associations ---------------------------------------------------
 ## Routine Samples ==================
 {
@@ -369,6 +421,27 @@ cat(paste0("Resps,Preds,Lag,Type\n"),
     ##         ## plot(mod.resid)
     ## ----end
 }
+
+## All aggregated samples ===========
+{
+    ## ---- EDA All associations data prep
+    assoc_data_pred(data, type = "All", FOCAL_RESPS, FOCAL_PRESSURES)
+    ## ----end
+
+    ## ---- EDA All dual plots
+    dual_plots(type = "All", FOCAL_RESPS, FOCAL_PRESSURES)
+    dual_plots(type = "All", FOCAL_RESPS, FOCAL_PRESSURES, lag = 1)
+    dual_plots(type = "All", FOCAL_RESPS, FOCAL_PRESSURES, lag = 2)
+    ## ----end
+    
+    ## ---- EDA All Associations
+    associations(type = "All", FOCAL_RESPS, FOCAL_PRESSURES)
+    associations(type = "All", FOCAL_RESPS, FOCAL_PRESSURES, lag = 1)
+    associations(type = "All", FOCAL_RESPS, FOCAL_PRESSURES, lag = 2)
+    ## ----end
+}
+
+
 
 ## library(gbm)
 

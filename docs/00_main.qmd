@@ -28,7 +28,7 @@ mathfont: LiberationMono
 monofont: DejaVu Sans Mono
 classoption: a4paper
 ---
-
+ 
 ```{r setup, include=FALSE, warnings=FALSE, message=FALSE}
 assignInNamespace('.sep.label',  "^\\ *(#|--)+\\s*(@knitr|----+)(.*?)-*\\s*$", ns='knitr')
 
@@ -71,6 +71,9 @@ knitr::read_chunk('../scripts/30_EDA.R')
 
 source('../scripts/functions.R')
 INCLUDE_FIGURES <- TRUE
+INCLUDE_DIAGNOSTICS <- FALSE
+PERFORM_ASSOC <- TRUE
+PERFORM_TREES <- FALSE
 ```
 
 # Background
@@ -1333,6 +1336,170 @@ readRDS(file = paste0(DATA_PATH, "processed/data.RData")) %>%
  
 
 
+# Exploratory trees (Routine sampling, no lags) 
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+```{r Trees Routine, results='asis', eval=TRUE, echo=FALSE}
+if (PERFORM_TREES) {
+    for (j in FOCAL_RESPS) {
+        lab <- units_lookup %>%
+            filter(Measure == j) %>%
+            pull(TableLabel) %>%
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", lab, "\n"))
+
+        cap <- paste0("Boosted regression tree relative influence (left) and selected partial trends (right) for ",lab,
+                      " for routine samples for the whole harbour. ",
+                      "")
+        ##if (INCLUDE_FIGURES)
+        cat(paste0("![",cap,"](../output/figures/Trees_routine_",j,".png){#fig-Tree-routine-",j,"} \n\n"))
+    }
+}
+```
+ 
+:::
+# Exploratory trees (Routine sampling, with lags) 
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+```{r Trees Routine lags, results='asis', eval=TRUE, echo=FALSE}
+if (PERFORM_TREES) {
+    for (j in FOCAL_RESPS) {
+        lab <- units_lookup %>%
+            filter(Measure == j) %>%
+            pull(TableLabel) %>%
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", lab, "\n"))
+
+        cap <- paste0("Boosted regression tree relative influence (left) and selected partial trends (right) for ",lab,
+                      " for routine samples for the whole harbour including lags (0-2). ",
+                      "")
+        ##if (INCLUDE_FIGURES)
+        cat(paste0("![",cap,"](../output/figures/Trees_routine_lags_",j,".png){#fig-Tree-routine-lags-",j,"} \n\n"))
+    }
+}
+```
+ 
+:::
+# Exploratory trees (Discrete sampling. no lags) 
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+```{r Trees Discrete, results='asis', eval=TRUE, echo=FALSE}
+if (PERFORM_TREES) {
+    for (j in FOCAL_RESPS) {
+        lab <- units_lookup %>%
+            filter(Measure == j) %>%
+            pull(TableLabel) %>%
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", lab, "\n"))
+
+        cap <- paste0("Boosted regression tree relative influence (left) and selected partial trends (right) for ",lab,
+                      " for discrete samples for the whole harbour. ",
+                      "")
+        ##if (INCLUDE_FIGURES)
+        cat(paste0("![",cap,"](../output/figures/Trees_discrete_",j,".png){#fig-Tree-discrete-",j,"} \n\n"))
+    }
+}
+```
+
+:::
+
+# Exploratory trees (Discrete sampling. with lags) 
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+```{r Trees Discrete lags, results='asis', eval=TRUE, echo=FALSE}
+if (PERFORM_TREES) {
+    for (j in FOCAL_RESPS) {
+        lab <- units_lookup %>%
+            filter(Measure == j) %>%
+            pull(TableLabel) %>%
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", lab, "\n"))
+
+        cap <- paste0("Boosted regression tree relative influence (left) and selected partial trends (right) for ",lab,
+                      " for discrete samples for the whole harbour including lags (0-2). ",
+                      "")
+        ##if (INCLUDE_FIGURES)
+        cat(paste0("![",cap,"](../output/figures/Trees_discrete_lags_",j,".png){#fig-Tree-discrete-lags-",j,"} \n\n"))
+    }
+}
+```
+
+:::
+
+# Exploratory trees (Routine sampling by Zone, no lags) 
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+
+```{r Trees Routine Zone, results='asis', eval=TRUE, echo=FALSE}
+if (PERFORM_TREES) {
+    for (j in FOCAL_RESPS) {
+        lab <- units_lookup %>%
+            filter(Measure == j) %>%
+            pull(TableLabel) %>%
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", lab, "\n"))
+
+        cat(paste0("\n::::: panel-tabset\n\n"))
+        for (k in unique(spatial_lookup$ZoneName)) {
+            cat(paste0("\n#### ", k, "\n"))
+            
+            cap <- paste0("Boosted regression tree relative influence (left) and selected partial trends (right) for ", lab,
+                          " for routine samples within the ", k, "Zone. ",
+                          "")
+            ##if (INCLUDE_FIGURES)
+            cat(paste0("![",cap,"](../output/figures/Trees_routine_",j,"__",k,".png){#fig-Tree-routine-",j,"__",k,"} \n\n"))
+        }
+
+        cat(paste0("\n:::::\n\n"))
+        
+    }
+}
+```
+ 
+:::
+# Exploratory trees (Discrete sampling by Zone, no lags) 
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+
+```{r Trees Discrete Zone, results='asis', eval=TRUE, echo=FALSE}
+if (PERFORM_TREES) {
+    for (j in FOCAL_RESPS) {
+        lab <- units_lookup %>%
+            filter(Measure == j) %>%
+            pull(TableLabel) %>%
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", lab, "\n"))
+
+        cat(paste0("\n::::: panel-tabset\n\n"))
+        for (k in unique(spatial_lookup$ZoneName)) {
+            cat(paste0("\n#### ", k, "\n"))
+            
+            cap <- paste0("Boosted regression tree relative influence (left) and selected partial trends (right) for ", lab,
+                          " for discrete samples within the ", k, "Zone. ",
+                          "")
+            ##if (INCLUDE_FIGURES)
+            cat(paste0("![",cap,"](../output/figures/Trees_discrete_",j,"__",k,".png){#fig-Tree-discrete-",j,"__",k,"} \n\n"))
+        }
+
+        cat(paste0("\n:::::\n\n"))
+        
+    }
+}
+```
+  
+:::
 # Exploratory data analyses (Routine sites)
 
 ```{r EDA load lookups, results='markdown', eval=TRUE}
@@ -1497,7 +1664,7 @@ inferred relationships may well be artefacts.
 
 :::: panel-tabset
 
-```{r EDA routine associations, results='asis', eval=TRUE, echo=FALSE}
+```{r EDA routine associations, results='asis', eval=PERFORM_ASSOC, echo=FALSE}
 for (j in FOCAL_RESPS) {
     lab <- units_lookup %>%
         filter(Measure == j) %>%
@@ -1541,36 +1708,40 @@ for (j in FOCAL_RESPS) {
         }
         cat(paste0("\n:::::::\n\n"))
 
-        cat(paste0("\n#### DHARMa residual uniformity\n"))
-        cat(paste0("\n::::::: panel-tabset\n\n"))
-        for (k in 0:2) {
-            cat(paste0("\n##### Lag ", k, "\n"))
-            cap <- paste0("Tests of uniformity in DHARMa (simulated) residuals (lag = ",k,") associated with fitted models of ",lab,
-                          " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
-                          "Ideally, the QQ plots should be straight lines.   Substantial deviations might imply that the underlying modelling distributions are not ideal.  Overlayed onto the QQ plots are a set of three statistical diagnostics of 1) distributional compliance, 2) dispersion and 3) outlierness.  Tests highlighted in red, indicate that there might be some evidence for a lack of fit in the data.  Not however that these are only guides and tend to be far more sensitive than the underlying modelling assumptions that they are inferring about.")
-            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
-            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_unif.routine.__",j,"__",MEASURE,k,".png){#fig-unif-routine-",j,".",MEASURE,k,"} \n\n"))
+        if (INCLUDE_DIAGNOSTICS) {
+            cat(paste0("\n#### DHARMa residual uniformity\n"))
+            cat(paste0("\n::::::: panel-tabset\n\n"))
+            for (k in 0:2) {
+                cat(paste0("\n##### Lag ", k, "\n"))
+                cap <- paste0("Tests of uniformity in DHARMa (simulated) residuals (lag = ",k,") associated with fitted models of ",lab,
+                              " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
+                              "Ideally, the QQ plots should be straight lines.   Substantial deviations might imply that the underlying modelling distributions are not ideal.  Overlayed onto the QQ plots are a set of three statistical diagnostics of 1) distributional compliance, 2) dispersion and 3) outlierness.  Tests highlighted in red, indicate that there might be some evidence for a lack of fit in the data.  Not however that these are only guides and tend to be far more sensitive than the underlying modelling assumptions that they are inferring about.")
+                if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+                if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_unif.routine.__",j,"__",MEASURE,k,".png){#fig-unif-routine-",j,".",MEASURE,k,"} \n\n"))
+            }
+            cat(paste0("\n:::::::\n\n"))
         }
-        cat(paste0("\n:::::::\n\n"))
 
-        cat(paste0("\n#### DHARMa residual quantiles\n"))
-        cat(paste0("\n::::::: panel-tabset\n\n"))
-        for (k in 0:2) {
-            cat(paste0("\n##### Lag ", k, "\n"))
-            cap <- paste0("Tests of DHARMa (simulated) residuals patterns with quantiles tests (lag = ",k,") associated with fitted models of ",lab,
-                          " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
-                          "Ideally, a residual plot should present as a a random cloud of points (notwithstanding that if there are only a small number of unique observations, the points will appear to be in vertical lines).  To help identify trends in the residuals, a dashed smoother is also included (although this is often highly sensitive to small fluctuations and is of little value when the sample sizes are small).")
-            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
-            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_quant.routine.__",j,"__",MEASURE,k,".png){#fig-quant-routine-",j,".",MEASURE,k,"} \n\n"))
+        if (INCLUDE_DIAGNOSTICS) {
+            cat(paste0("\n#### DHARMa residual quantiles\n"))
+            cat(paste0("\n::::::: panel-tabset\n\n"))
+            for (k in 0:2) {
+                cat(paste0("\n##### Lag ", k, "\n"))
+                cap <- paste0("Tests of DHARMa (simulated) residuals patterns with quantiles tests (lag = ",k,") associated with fitted models of ",lab,
+                              " against ", MEASURE_lab, " for routine samples within each of the Zones. ",
+                              "Ideally, a residual plot should present as a a random cloud of points (notwithstanding that if there are only a small number of unique observations, the points will appear to be in vertical lines).  To help identify trends in the residuals, a dashed smoother is also included (although this is often highly sensitive to small fluctuations and is of little value when the sample sizes are small).")
+                if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+                if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_quant.routine.__",j,"__",MEASURE,k,".png){#fig-quant-routine-",j,".",MEASURE,k,"} \n\n"))
+            }
+            cat(paste0("\n:::::::\n\n"))
         }
-        cat(paste0("\n:::::::\n\n"))
 
         cat(paste0("\n#### Summary Tables\n"))
         cat(paste0("\n::::::: panel-tabset\n\n"))
         for (k in 0:2) {
             cat(paste0("\n##### Lag ", k, "\n"))
             if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
-            summary_table(j, MEASURE, k, routine = TRUE) %>%
+            summary_table(j, MEASURE, k, type = 'Routine') %>%
                  save_kable(file = paste0(TABS_PATH,"/tab.routine__",j,"__", MEASURE,k,".html"),
                             self_contained = F)
         }
@@ -1741,7 +1912,7 @@ for (j in FOCAL_RESPS) {
 
 :::: panel-tabset
 
-```{r EDA associations, results='asis', eval=TRUE, echo=FALSE}
+```{r EDA associations, results='asis', eval=PERFORM_ASSOC, echo=FALSE}
 for (j in FOCAL_RESPS) {
     lab <- units_lookup %>%
         filter(Measure == j) %>%
@@ -1785,29 +1956,33 @@ for (j in FOCAL_RESPS) {
         }
         cat(paste0("\n:::::::\n\n"))
 
-        cat(paste0("\n#### DHARMa residual uniformity\n"))
-        cat(paste0("\n::::::: panel-tabset\n\n"))
-        for (k in 0:2) {
-            cat(paste0("\n##### Lag ", k, "\n"))
-            cap <- paste0("Tests of uniformity in DHARMa (simulated) residuals (lag = ",k,") associated with fitted models of ",lab,
-                          " against ", MEASURE_lab, " for discrete samples within each of the Zones. ",
-                          "Ideally, the QQ plots should be straight lines.   Substantial deviations might imply that the underlying modelling distributions are not ideal.  Overlayed onto the QQ plots are a set of three statistical diagnostics of 1) distributional compliance, 2) dispersion and 3) outlierness.  Tests highlighted in red, indicate that there might be some evidence for a lack of fit in the data.  Not however that these are only guides and tend to be far more sensitive than the underlying modelling assumptions that they are inferring about.")
-            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
-            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_unif.__",j,"__",MEASURE,k,".png){#fig-unif-",j,".",MEASURE,k,"} \n\n"))
+        if (INCLUDE_DIAGNOSTICS) {
+            cat(paste0("\n#### DHARMa residual uniformity\n"))
+            cat(paste0("\n::::::: panel-tabset\n\n"))
+            for (k in 0:2) {
+                cat(paste0("\n##### Lag ", k, "\n"))
+                cap <- paste0("Tests of uniformity in DHARMa (simulated) residuals (lag = ",k,") associated with fitted models of ",lab,
+                              " against ", MEASURE_lab, " for discrete samples within each of the Zones. ",
+                              "Ideally, the QQ plots should be straight lines.   Substantial deviations might imply that the underlying modelling distributions are not ideal.  Overlayed onto the QQ plots are a set of three statistical diagnostics of 1) distributional compliance, 2) dispersion and 3) outlierness.  Tests highlighted in red, indicate that there might be some evidence for a lack of fit in the data.  Not however that these are only guides and tend to be far more sensitive than the underlying modelling assumptions that they are inferring about.")
+                if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+                if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_unif.__",j,"__",MEASURE,k,".png){#fig-unif-",j,".",MEASURE,k,"} \n\n"))
+            }
+            cat(paste0("\n:::::::\n\n"))
         }
-        cat(paste0("\n:::::::\n\n"))
 
-        cat(paste0("\n#### DHARMa residual quantiles\n"))
-        cat(paste0("\n::::::: panel-tabset\n\n"))
-        for (k in 0:2) {
-            cat(paste0("\n##### Lag ", k, "\n"))
-            cap <- paste0("Tests of DHARMa (simulated) residuals patterns with quantiles tests (lag = ",k,") associated with fitted models of ",lab,
-                          " against ", MEASURE_lab, " for discrete samples within each of the Zones. ",
-                          "Ideally, a residual plot should present as a a random cloud of points (notwithstanding that if there are only a small number of unique observations, the points will appear to be in vertical lines).  To help identify trends in the residuals, a dashed smoother is also included (although this is often highly sensitive to small fluctuations and is of little value when the sample sizes are small).")
-            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
-            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_quant.__",j,"__",MEASURE,k,".png){#fig-quant-",j,".",MEASURE,k,"} \n\n"))
+        if (INCLUDE_DIAGNOSTICS) {
+            cat(paste0("\n#### DHARMa residual quantiles\n"))
+            cat(paste0("\n::::::: panel-tabset\n\n"))
+            for (k in 0:2) {
+                cat(paste0("\n##### Lag ", k, "\n"))
+                cap <- paste0("Tests of DHARMa (simulated) residuals patterns with quantiles tests (lag = ",k,") associated with fitted models of ",lab,
+                              " against ", MEASURE_lab, " for discrete samples within each of the Zones. ",
+                              "Ideally, a residual plot should present as a a random cloud of points (notwithstanding that if there are only a small number of unique observations, the points will appear to be in vertical lines).  To help identify trends in the residuals, a dashed smoother is also included (although this is often highly sensitive to small fluctuations and is of little value when the sample sizes are small).")
+                if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+                if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_quant.__",j,"__",MEASURE,k,".png){#fig-quant-",j,".",MEASURE,k,"} \n\n"))
+            }
+            cat(paste0("\n:::::::\n\n"))
         }
-        cat(paste0("\n:::::::\n\n"))
 
 
         cat(paste0("\n#### Summary Tables\n"))
@@ -1816,7 +1991,7 @@ for (j in FOCAL_RESPS) {
             cat(paste0("\n##### Lag ", k, "\n"))
             if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
    
-            summary_table(j, MEASURE, k) %>%
+            summary_table(j, MEASURE, k, type = 'Discrete') %>%
                 save_kable(file = paste0(TABS_PATH,"/tab.__",j,"__", MEASURE,k,".html"),
                            self_contained = F)
               
@@ -1917,4 +2092,261 @@ for (j in FOCAL_RESPS) {
 
 :::
 	
+	
+# Exploratory data analyses (All sites)
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+
+## Responses
+
+<details><summary>View codes</summary>
+```{r EDA load data, results='markdown', eval=FALSE}
+```
+```{r EDA function, results='markdown', eval=FALSE}
+```
+```{r EDA All, results='markdown', eval=FALSE}
+```
+```{r EDA All save, results='markdown', eval=FALSE}
+```
+</details>
+
+
+:::: panel-tabset
+
+```{r EDA responses all, results='asis', eval=TRUE, echo=FALSE}
+for (i in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == i) %>%
+        pull(TableLabel)
+    cap <- paste0("Temporal trends in ",lab,
+                  " within each of the Zones for all (discrete/routine and CFM) samples. ",
+                  "Points represent Zone/Year aggregations  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+    cat(paste0("\n### ", lab, "\n"))
+    if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/EDA_all_",i,".png){#fig-EDA-all-",i,"} \n\n"))}
+```
+
+::::
+	
+## Pressures
+See the plots in the Exploratory data analyses (Discrete samples) section.
+
+## Dual time series plots
+
+Note, in the following plots, pressures are expressed in Zone
+aggregations rather than Catchments so that they can be aligned with
+the responses (stressors).  Also notes that the temporal range of
+pressures is truncated to match that of the maximum temporal domain of
+the stressors data.
+
+<details><summary>View codes</summary>
+```{r EDA associations data prep function, results='markdown', eval=FALSE}
+```
+```{r EDA Routine associations data prep, results='markdown', eval=FALSE}
+```
+```{r EDA associations file append function, results='markdown', eval=FALSE}
+```
+```{r EDA associations file lag function, results='markdown', eval=FALSE}
+```
+```{r EDA fitSimpleGAM_resp function, results='markdown', eval=FALSE}
+```
+```{r EDA predSimpleGAM_resp function, results='markdown', eval=FALSE}
+```
+```{r EDA fitSimpleGAM_pres function, results='markdown', eval=FALSE}
+```
+```{r EDA predSimpleGAM_pres function, results='markdown', eval=FALSE}
+```
+```{r EDA associations dual plots function, results='markdown', eval=FALSE}
+```
+```{r EDA All dual plots, results='markdown', eval=FALSE}
+```
+</details>
+
+:::: panel-tabset
+
+```{r EDA all dual, results='asis', eval=TRUE, echo=FALSE}
+for (j in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == j) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("\n::::: panel-tabset\n\n"))
+    for (i in 1:nrow(FOCAL_PRESSURES)) {
+        MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+        MEASURE_lab <- units_lookup %>%
+            filter(Measure == MEASURE) %>%
+            pull(TableLabel) %>% 
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", MEASURE_lab, "\n"))
+
+        cat("\n:::::: panel-tabset\n\n")
+        for (k in 0:2) {
+            cat(paste0("\n#### Lag ", k, "\n"))
+            cap <- paste0("Temporal trends (lag = ",k,") in ",lab,
+                          " (orange) and ", MEASURE_lab, " (purple) within each of the Zones for all sampling sites. ",
+                          "Points represent Zone/Year aggregations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+            if (k == 0) k = ""
+            else k = paste0(".",k)
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/EDA_dual_plot.all.__",j,"__",MEASURE,k,".png){#fig-EDA-all-",j,".",MEASURE,k,"} \n\n"))
+        }
+        
+    cat(paste0("\n::::::\n\n"))
+    }
+    cat(paste0("\n:::::\n\n"))
+}
+
+```
+
+::::
+
+
+## Associations
+
+Relating two time series is a difficult statistical challenge.  In
+order to establish that the covariance amongst two time series is
+causal and not simply correlated (due to both being correlated to
+other influences), it is necessary to remove the temporal component.
+For example, two time series might both appear to increase linearly
+over time.  This may be because one of the variables genuinely does
+impact on the other.  However, it is also possible that they are both
+responding to similar underlying influences.  Removing the temporal
+element, means that the associations are concentrating on the smaller
+perturbations rather than the overall trends.
+
+To remove the temporal element, each time series can be transformed
+into differences between successive observations.  Such a
+transformation will result in time series that fluctuate over time.
+If the fluctuations of each time series coincide, then it is more
+likely that the associations are correlative.
+
+Unfortunately, for this transformation to be useful, it is necessary
+for both time series to be regular (uniformly spaced out sampling
+intervals with no missing values) or at least identically irregular -
+neither of which apply to the current data series.  Alternatively, if
+the time series were sufficiently long (20+ years), non-parametric
+spline models could be fit to reconstruct estimates of the full time
+series from which to sample at regular time intervals to achieve a
+similar analysis.  Unfortunately again this option is not available
+for these data due to the relatively short time span of the
+data. Consequently, we can only explore simple models that explore the
+relationships between the time series and acknowledge that any
+inferred relationships may well be artefacts.
+
+<details><summary>View codes</summary>
+```{r EDA associations data prep function, results='markdown', eval=FALSE}
+```
+```{r EDA Routine associations data prep, results='markdown', eval=FALSE}
+```
+```{r EDA associations file append function, results='markdown', eval=FALSE}
+```
+```{r EDA associations file lag function, results='markdown', eval=FALSE}
+```
+```{r EDA associations modelled_settings_prior function, results='markdown', eval=FALSE}
+```
+```{r EDA associations simple_gam function, results='markdown', eval=FALSE}
+```
+```{r EDA associations fitModels function, results='markdown', eval=FALSE}
+```
+```{r EDA associations associations function, results='markdown', eval=FALSE}
+```
+```{r EDA All Associations, results='markdown', eval=FALSE}
+```
+</details>
+
+:::: panel-tabset
+
+```{r EDA all associations, results='asis', eval=PERFORM_ASSOC, echo=FALSE}
+for (j in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == j) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("\n::::: panel-tabset\n\n"))
+    for (i in 1:nrow(FOCAL_PRESSURES)) {
+        MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+        MEASURE_lab <- units_lookup %>%
+            filter(Measure == MEASURE) %>%
+            pull(TableLabel) %>% 
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", MEASURE_lab, "\n"))
+
+        cat(paste0("\n:::::: panel-tabset\n\n"))
+        cat(paste0("\n#### Simple trends\n"))
+    
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            cap <- paste0("Simple Generalised Additive Model (GAM) trends (lag = ",k,") for ",lab,
+                          " against ", MEASURE_lab, " for all samples within each of the Zones. ",
+                          "Paired observations are marked by a number reflecting the position of the observation in the joint temporal series.  For example, a label of \"1\" indicates that this observation was collected during the oldest sampling time.  Blue lines and ribbons represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k,".",k)}
+            
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/gamPlots.all.__",j,"__",MEASURE,k,".png){#fig-EDA-all-",j,".",MEASURE,k,"} \n\n"))
+
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+        cat(paste0("\n#### Partial plots\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            cap <- paste0("Partial trends for the fitted models (lag = ",k,") of ",lab,
+                          " against ", MEASURE_lab, " for all samples within each of the Zones. ",
+                          "Paired obsevations are symbolised by solid black points.Points represent collected observations at unique lat/long/Year combinations.  Blue lines and ribbons represent the estimated model outcomes with 95% confidence envelopes.  Missing panels (Zones) occur when no stable model could be fit to the data.")
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/partial.all.__",j,"__",MEASURE,k,".png){#fig-partial-all-",j,".",MEASURE,k,"} \n\n"))
+        }
+        cat(paste0("\n:::::::\n\n"))
+
+        if (INCLUDE_DIAGNOSTICS) {
+            cat(paste0("\n#### DHARMa residual uniformity\n"))
+            cat(paste0("\n::::::: panel-tabset\n\n"))
+            for (k in 0:2) {
+                cat(paste0("\n##### Lag ", k, "\n"))
+                cap <- paste0("Tests of uniformity in DHARMa (simulated) residuals (lag = ",k,") associated with fitted models of ",lab,
+                              " against ", MEASURE_lab, " for all samples within each of the Zones. ",
+                              "Ideally, the QQ plots should be straight lines.   Substantial deviations might imply that the underlying modelling distributions are not ideal.  Overlayed onto the QQ plots are a set of three statistical diagnostics of 1) distributional compliance, 2) dispersion and 3) outlierness.  Tests highlighted in red, indicate that there might be some evidence for a lack of fit in the data.  Not however that these are only guides and tend to be far more sensitive than the underlying modelling assumptions that they are inferring about.")
+                if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+                if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_unif.all.__",j,"__",MEASURE,k,".png){#fig-unif-all-",j,".",MEASURE,k,"} \n\n"))
+            }
+            cat(paste0("\n:::::::\n\n"))
+        }
+
+        if (INCLUDE_DIAGNOSTICS) {
+            cat(paste0("\n#### DHARMa residual quantiles\n"))
+            cat(paste0("\n::::::: panel-tabset\n\n"))
+            for (k in 0:2) {
+                cat(paste0("\n##### Lag ", k, "\n"))
+                cap <- paste0("Tests of DHARMa (simulated) residuals patterns with quantiles tests (lag = ",k,") associated with fitted models of ",lab,
+                              " against ", MEASURE_lab, " for all samples within each of the Zones. ",
+                              "Ideally, a residual plot should present as a a random cloud of points (notwithstanding that if there are only a small number of unique observations, the points will appear to be in vertical lines).  To help identify trends in the residuals, a dashed smoother is also included (although this is often highly sensitive to small fluctuations and is of little value when the sample sizes are small).")
+                if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+                if (INCLUDE_FIGURES) cat(paste0("![",cap,"](../output/figures/DHARMa_quant.all.__",j,"__",MEASURE,k,".png){#fig-quant-all-",j,".",MEASURE,k,"} \n\n"))
+            }
+            cat(paste0("\n:::::::\n\n"))
+        }
+
+        cat(paste0("\n#### Summary Tables\n"))
+        cat(paste0("\n::::::: panel-tabset\n\n"))
+        for (k in 0:2) {
+            cat(paste0("\n##### Lag ", k, "\n"))
+            if (k == 0) {k <- ""} else {k <- paste0("_lag",k)}
+            summary_table(j, MEASURE, k, type = 'All') %>%
+                 save_kable(file = paste0(TABS_PATH,"/tab.all__",j,"__", MEASURE,k,".html"),
+                            self_contained = F)
+        }
+        cat(paste0("\n:::::::\n\n"))
+        
+        cat(paste0("\n::::::\n\n")) 
+    }
+    cat(paste0("\n:::::\n\n"))
+}
+```
+
+::::
+
+:::
 	
