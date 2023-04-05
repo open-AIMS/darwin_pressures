@@ -75,6 +75,10 @@ img.pdf {
     border-radius: 4px;
 }
 
+.table {
+    max-height: none !important;
+}
+
 table.table-condensed  {background:#e8f1f6;text-align:left;border:0;border-spacing:0;}
 table.table-condensed th {display:table-header;color:white;font-size:1em;font-weight: bold; border:1.0pt solid rgb(0,0,127);padding:3.6pt 5pt;background:rgb(0,120,230) none repeat scroll 0% 50%;}
 table.table-condensed td {padding:3pt;border-left: 1.0pt solid rgb(0,0,127);border-right: 1.0pt solid rgb(0,0,127);border-bottom: 1.0pt solid rgb(0,0,127)}

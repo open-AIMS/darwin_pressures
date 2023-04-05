@@ -200,7 +200,8 @@ table>caption {
     display:block;
     /* max-width:760px; */
     max-width:1200;
-    max-height:30em;
+    /* max-height:30em; */
+    max-height: none !important;
     overflow:auto;
 }
 

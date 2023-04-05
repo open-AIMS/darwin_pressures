@@ -38,12 +38,12 @@ Corr <- function(mod, newdata, Resp, n.trees) {
     Resp <- Resp %>% setNames('Obs')
     pmap(.l = list(mod, n.trees),
          .f = ~ {
-             print(..3)
+             ## print(..3)
              newdata %>%
              mutate(n = 1:n(),
                     Pred = predict(..1, newdata, n.trees = ..2),
                     Fit = exp(Pred)) %>%
-                 as.data.frame()i
+                 as.data.frame()
              }) %>%
         enframe(name = "Boot") %>%
         mutate(value = map(.x = value, .f = ~ .x %>% cbind(Resp)),
@@ -64,14 +64,28 @@ make_plot <- function(dat, focal_resp, focal_pred, Min, Max, R2) {
                          )
     xlab <- units_lookup.wlags %>% filter(Measure == {{focal_pred}}) %>% pull(TableLabel)  
     ylab <- units_lookup %>% filter(Measure == {{focal_resp}}) %>% pull(TableLabel)  
+    xscale <- units_lookup.wlags %>% filter(Measure == {{focal_pred}}) %>%
+       pull(Trans) 
+    print(paste0(focal_resp, ": ", focal_pred, ": ", xscale))
     dat %>%
         ggplot() +
         geom_ribbon(aes(ymin = Lower, ymax = Upper, x = Predictor_value),
                     fill = "orange", alpha = 0.5) +
         geom_line(aes(y = Median, x = Predictor_value), colour = "orange") +
-        scale_x_continuous(str_wrap(xlab, 25)) + 
+        {if (xscale == 'log10') {
+             scale_x_log10(str_wrap(xlab, 25))
+         } else {
+             scale_x_continuous(str_wrap(xlab, 25))
+         }
+        } +
         scale_y_continuous(ylab, limits = c(Min, Max)) +
-        ggtitle(paste0('R2 = ', round(R2$Median,3))) +
+        ggtitle(paste0('R2 = ',
+                       round(R2$Median,3),
+                       " [",
+                       round(R2$Lower, 3),
+                       ", ",
+                       round(R2$Upper, 3),
+                       "]")) +
         theme_classic()
     }
 
@@ -312,7 +326,7 @@ for (j in FOCAL_RESPS) {
                Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                R2 = map(.x = Corr, .f = ~ R2(.x)),
                R2.sum = map(.x = R2, .f = ~ summ(.x))
-               )%>% 
+               ) %>% 
         ## mutate(pred = map(.x = value,
         ##                   .f = ~ .x %>%
         ##                       mutate(Pred = predict(mod, .x, n.trees = n.trees),
@@ -325,7 +339,13 @@ for (j in FOCAL_RESPS) {
                Max = max(Max)) %>%
         mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
                         .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
-
+    metadata <- list(FOCAL_RESP = j,
+                     Type = 'Routine',
+                     Source = NULL,
+                     include_lags = FALSE,
+                     ZoneName = NULL,
+                     Assoc = a)
+    saveRDS(metadata, file = paste0(DATA_PATH, "modelled/assoc_stats_routine_",j,".RData"))
    ggsave(filename = paste0(FIGS_PATH, '/Trees_routine_',j,'.png'),
            g1 + wrap_plots(a$g) + plot_layout(widths = c(1, 4)),
            width = 15, height = 9)
@@ -335,7 +355,7 @@ for (j in FOCAL_RESPS) {
 }
 
 if (1==2) {
-    ## DONE
+    ## Not DONE 22076
 ## ---- Trees fit model Routine with lags whole harbour
 for (j in FOCAL_RESPS) {
     data.resp <- data %>%
@@ -425,6 +445,13 @@ for (j in FOCAL_RESPS) {
         mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
                         .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
+    metadata <- list(FOCAL_RESP = j,
+                     Type = 'Routine',
+                     Source = NULL,
+                     include_lags = TRUE,
+                     ZoneName = NULL,
+                     Assoc = a)
+    saveRDS(metadata, file = paste0(DATA_PATH, "modelled/assoc_stats_routine_logs_",j,".RData"))
    ggsave(filename = paste0(FIGS_PATH, '/Trees_routine_lags_',j,'.png'),
            g1 + wrap_plots(a$g) + plot_layout(widths = c(1, 4)),
            width = 15, height = 9)
@@ -435,7 +462,7 @@ for (j in FOCAL_RESPS) {
 
 
 if (1==2) {
-    ## DONE
+    ## Not DONE 22075
 ## ---- Trees fit model Discrete no lags whole harbour
 for (j in FOCAL_RESPS) {
     data.resp <- data %>%
@@ -517,6 +544,13 @@ for (j in FOCAL_RESPS) {
         mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
                         .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
+    metadata <- list(FOCAL_RESP = j,
+                     Type = NULL,
+                     Source = 'Discrete',
+                     include_lags = FALSE,
+                     ZoneName = NULL,
+                     Assoc = a)
+    saveRDS(metadata, file = paste0(DATA_PATH, "modelled/assoc_stats_discrete_",j,".RData"))
 
    ggsave(filename = paste0(FIGS_PATH, '/Trees_discrete_',j,'.png'),
            g1 + wrap_plots(a$g) + plot_layout(widths = c(1, 4)),
@@ -529,7 +563,7 @@ for (j in FOCAL_RESPS) {
 
 
 if (1==2) {
-    ## DONE
+    ## Not DONE 22077
 ## ---- Trees fit model Discrete with lags whole harbour
 for (j in FOCAL_RESPS) {
     data.resp <- data %>%
@@ -618,6 +652,13 @@ for (j in FOCAL_RESPS) {
         mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
                         .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
+    metadata <- list(FOCAL_RESP = j,
+                     Type = NULL,
+                     Source = 'Discrete',
+                     include_lags = TRUE,
+                     ZoneName = NULL,
+                     Assoc = a)
+    saveRDS(metadata, file = paste0(DATA_PATH, "modelled/assoc_stats_discrete_lags_",j,".RData"))
    ggsave(filename = paste0(FIGS_PATH, '/Trees_discrete_lags_',j,'.png'),
            g1 + wrap_plots(a$g) + plot_layout(widths = c(1, 4)),
            width = 15, height = 9)
@@ -627,8 +668,8 @@ for (j in FOCAL_RESPS) {
 }
 
 
-if (1==2) {
-    ## DONE
+if (1==1) {
+    ## Not DONE 22168
 ## ---- Trees fit model Routine no lags by Zones
 for (j in FOCAL_RESPS) {
     for (k in unique(data$ZoneName)) {
@@ -738,6 +779,13 @@ for (j in FOCAL_RESPS) {
         ##     mutate(g = pmap(.l = list(pred, name, Min, Max),
         ##                     .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4)))
 
+        metadata <- list(FOCAL_RESP = j,
+                         Type = 'Routine',
+                         Source = NULL,
+                         include_lags = FALSE,
+                         ZoneName = k,
+                         Assoc = a)
+        saveRDS(metadata, file = paste0(DATA_PATH, "modelled/assoc_stats_routine_",j,"__",k,".RData"))
         ggsave(filename = paste0(FIGS_PATH, '/Trees_routine_',j,'__',k,'.png'),
                g1 + wrap_plots(a$g) + plot_layout(widths = c(1, 4)),
                width = 15, height = 9)
@@ -748,7 +796,7 @@ for (j in FOCAL_RESPS) {
 
 
 if (1==2) {
-    ## DONE
+    ## Not DONE 22079
 ## ---- Trees fit model Discrete no lags by Zones
 for (j in FOCAL_RESPS) {
     for (k in unique(data$ZoneName)) {
@@ -854,6 +902,13 @@ for (j in FOCAL_RESPS) {
                             .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
 
+        metadata <- list(FOCAL_RESP = j,
+                         Type = NULL,
+                         Source = 'Discrete',
+                         include_lags = FALSE,
+                         ZoneName = k,
+                         Assoc = a)
+        saveRDS(metadata, file = paste0(DATA_PATH, "modelled/assoc_stats_discrete_",j,"__",k,".RData"))
 
         ggsave(filename = paste0(FIGS_PATH, '/Trees_discrete_',j,'__',k,'.png'),
                g1 + wrap_plots(a$g) + plot_layout(widths = c(1, 4)),
@@ -866,7 +921,7 @@ for (j in FOCAL_RESPS) {
 }
 
 if (1==2) {
-    ## Pendingi 21585
+    ## Not DONE 22080
 ## ---- Trees fit model Discrete with lags by Zones
 for (j in FOCAL_RESPS) {
     for (k in unique(data$ZoneName)) {
@@ -972,6 +1027,13 @@ for (j in FOCAL_RESPS) {
                             .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
 
+        metadata <- list(FOCAL_RESP = j,
+                         Type = NULL,
+                         Source = 'Discrete',
+                         include_lags = TRUE,
+                         ZoneName = k,
+                         Assoc = a)
+        saveRDS(metadata, file = paste0(DATA_PATH, "modelled/assoc_stats_discrete_lags_",j,"__",k,".RData"))
 
         ggsave(filename = paste0(FIGS_PATH, '/Trees_discrete_lags_',j,'__',k,'.png'),
                g1 + wrap_plots(a$g) + plot_layout(widths = c(1, 4)),
@@ -984,7 +1046,7 @@ for (j in FOCAL_RESPS) {
 }
 
 if (1==2) {
-    ## DONE 21586
+    ## Not DONE 22167
 ## ---- Trees fit model Routine with lags by Zones
 for (j in FOCAL_RESPS) {
     for (k in unique(data$ZoneName)) {
@@ -1090,6 +1152,13 @@ for (j in FOCAL_RESPS) {
                             .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
 
+        metadata <- list(FOCAL_RESP = j,
+                         Type = 'Routine',
+                         Source = NULL,
+                         include_lags = TRUE,
+                         ZoneName = k,
+                         Assoc = a)
+        saveRDS(metadata, file = paste0(DATA_PATH, "modelled/assoc_stats_routine_lags_",j,"__",k,".RData"))
 
         ggsave(filename = paste0(FIGS_PATH, '/Trees_routine_lags_',j,'__',k,'.png'),
                g1 + wrap_plots(a$g) + plot_layout(widths = c(1, 4)),
@@ -1100,3 +1169,5 @@ for (j in FOCAL_RESPS) {
 
 ## ----end
 }
+
+##
