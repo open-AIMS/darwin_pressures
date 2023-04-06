@@ -1,0 +1,478 @@
+
+# Exploratory data analyses (Discrete samples)
+
+```{r EDA load lookups, results='markdown', eval=TRUE}
+```
+::: panel-tabset
+
+## Responses
+
+<details><summary>View codes</summary>
+```{r EDA load data, results='markdown', eval=FALSE}
+```
+```{r EDA function, results='markdown', eval=FALSE}
+```
+```{r EDA, results='markdown', eval=FALSE}
+```
+```{r EDA save, results='markdown', eval=FALSE}
+```
+</details>
+
+:::: panel-tabset
+
+```{r EDA responses, results='asis', eval=TRUE, echo=FALSE}
+for (i in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == i) %>%
+        pull(TableLabel)
+    cap <- paste0("Temporal trends in ",lab,
+                  " within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("![",cap,"](../output/figures/EDA_",i,".png){#fig-EDA-",i,"} \n\n"))}
+```
+
+::::
+
+## Pressures
+
+<details><summary>View codes</summary>
+```{r EDA pressures function, results='markdown', eval=FALSE}
+```
+```{r EDA pressures, results='markdown', eval=FALSE}
+```
+</details>
+
+:::: panel-tabset
+
+```{r EDA pressures tab, results='asis', eval=TRUE, echo=FALSE}
+for (i in FOCAL_PRESSURES$Measure) {
+    lab <- units_lookup %>%
+        filter(Measure == i) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cap <- paste0("Temporal trends in ",lab,
+                  " within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("![",cap,"](../output/figures/EDA_pressures_",i,".png){#fig-EDA-",i,"} \n\n"))}
+```
+
+::::
+
+## Dual time series plots
+
+Note, in the following plots, pressures are expressed in Zone
+aggregations rather than Catchments so that they can be aligned with
+the responses (stressors).  Also notes that the temporal range of
+pressures is truncated to match that of the maximum temporal domain of
+the stressors data.
+
+:::: panel-tabset
+
+```{r EDA dual, results='asis', eval=TRUE, echo=FALSE}
+for (j in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == j) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("\n::::: panel-tabset\n\n"))
+    for (i in 1:nrow(FOCAL_PRESSURES)) {
+        MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+        MEASURE_lab <- units_lookup %>%
+            filter(Measure == MEASURE) %>%
+            pull(TableLabel) %>% 
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", MEASURE_lab, "\n"))
+
+    cap <- paste0("Temporal trends in ",lab,
+                  " (orange) and ", MEASURE_lab, " (purple) within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+        cat(paste0("![",cap,"](../output/figures/EDA_dual_plot__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+    }
+    cat(paste0("\n:::::\n\n"))
+}
+
+```
+
+::::
+
+## Associations
+
+:::: panel-tabset
+
+```{r EDA associations, results='asis', eval=TRUE, echo=FALSE}
+for (j in FOCAL_RESPS) {
+    lab <- units_lookup %>%
+        filter(Measure == j) %>%
+        pull(TableLabel) %>%
+        str_replace_all("\\$","\\\\$")
+    cat(paste0("\n### ", lab, "\n"))
+    cat(paste0("\n::::: panel-tabset\n\n"))
+    for (i in 1:nrow(FOCAL_PRESSURES)) {
+        MEASURE <- FOCAL_PRESSURES[i, "Measure"][[1]]
+        MEASURE_lab <- units_lookup %>%
+            filter(Measure == MEASURE) %>%
+            pull(TableLabel) %>% 
+            str_replace_all("\\$","\\\\$")
+        cat(paste0("\n### ", MEASURE_lab, "\n"))
+
+        cat(paste0("\n:::::: panel-tabset\n\n"))
+        cat(paste0("\n#### Simple trends\n"))
+    cap <- paste0("Temporal trends in ",lab,
+                  " (orange) and ", MEASURE_lab, " (purple) within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+        cat(paste0("![",cap,"](../output/figures/gamPlots__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### Partial plots\n"))
+        cat(paste0("![",cap,"](../output/figures/partial__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### DHARMa residual uniformity\n"))
+        cat(paste0("![",cap,"](../output/figures/DHARMa_unif__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### DHARMa residual quantiles\n"))
+        cat(paste0("![",cap,"](../output/figures/DHARMa_quant__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+
+        cat(paste0("\n#### Summary Tables\n"))
+        data.EDA.mod.sum <- readRDS(file = paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",
+                                                  j,"__",MEASURE,".RData"))
+        R2 <- data.EDA.mod.sum %>%
+            mutate(R2c = map(.x = R2, .f = ~ .x[3,1])) %>%
+            mutate(R2m = map(.x = R2, .f = ~ .x[3,2])) %>%
+            dplyr::select(ZoneName, R2c, R2m) %>%
+            unnest(c(R2c, R2m)) %>%
+            pivot_longer(cols = c(R2c, R2m),
+                         names_to = "term") %>%
+            mutate(effect = ifelse(term == 'R2c','fixed','Total')) %>%
+            mutate(group = "") %>%
+            mutate(Parameter = sprintf("% 0.3f",value)) %>%
+            dplyr::select(-value)
+        Emmeans <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+            unnest(Emmeans) %>%
+            group_by(ZoneName) %>%
+            summarise(Emmeans = list(response), .groups = "drop")
+
+        EM <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+            unnest(Emmeans) %>%
+            {split(.$response, .$ZoneName)}
+        
+        data.EDA.mod.sum %>% dplyr::select(ZoneName, Params2) %>% unnest(Params2) -> a
+
+        ## a %>%
+        ##     kable() %>%
+        ##     print()
+        ## ##library(flextable)
+        ## library(gt)
+
+        ## ##R2 %>% gt() %>% as_raw_html() %>% print()
+        ## ## print(gt(R2))
+        ## ## cat('\nhi\n')
+        
+        ## library(gtExtras)
+        as_tibble(a) %>%
+            mutate(term = str_replace(term, 'sd__', "")) %>%
+            ## mutate(Parameter = paste(insight::format_value(estimate,),
+            ##                           insight::format_ci(conf.low, conf.high, ci = NULL))) %>%
+            mutate(Parameter = sprintf("% 0.3f\n[% 2.3f,% 2.3f]", estimate,conf.low, conf.high)) %>%
+            mutate(Parameter = str_replace_all(Parameter, "NA|NaN|Inf","")) %>%
+            mutate(Parameter = replace_na(Parameter, "")) %>%
+            ## mutate(Parameter = str_glue("{format(estimate,justify = 'left', digits = 3, scientific = FALSE)}")) %>%
+            dplyr::select(-std.error, -statistic, -p.value, -estimate, -conf.low, -conf.high) %>% 
+            full_join(R2) %>%
+            ## filter(!Stat %in% c('z', 'df_error', 'p', 'SE', 'CI')) %>%
+            filter(!(term == "(Intercept)" & effect == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+            dplyr::select(-component) %>%
+            mutate(term = paste0(group,term)) %>%
+            ## arrange(ZoneName, effect, term) %>%
+            mutate(term = str_replace(term, "WQ_SITE\\(Intercept\\)", "Site (SD)")) %>%
+            dplyr::select(-group) %>%
+            ## pivot_wider(id_cols = everything(),
+            ##             names_from = Stat,
+            ##             values_from = value)
+                                        #unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat,) %>%
+            unite(col = 'Name', effect, term, sep = "__",na.rm = FALSE) %>%
+                                        #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+            ## unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+            mutate(Name = str_replace_all(Name, "NA","")) %>% 
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)1", "DV (Linear)")) %>%
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)2", "DV (Quadratic)")) %>%
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)3", "DV (Cubic)")) %>%
+            mutate(Name = str_replace(Name, "fixed", "Fixed")) %>%
+            mutate(Name = str_replace(Name, "ran_pars", "Random")) %>%
+            arrange(Name) %>%
+            pivot_wider(id_cols = everything(),
+                        names_from = Name,
+                        values_from = Parameter) %>%
+            arrange(ZoneName) %>%
+            rename(Zone = ZoneName) -> b
+ 
+        library(kableExtra)
+        ##library(webshot)
+        b %>%
+            full_join(Emmeans %>% rename(Zone = ZoneName)) %>%
+            dplyr::rename(Total__Trend = Emmeans) %>%
+            dplyr::mutate(Total__Trend = "") %>% 
+                                        #dplyr::select(-Trend) %>%
+            mutate(across(matches("DV|Year|Random"), ~replace_na(.x, " "))) %>%
+            kable(escape = FALSE) %>%
+            column_spec(ncol(b)+1, image = spec_plot(EM, same_lim = FALSE)) %>%
+            header_separate(sep="__") %>%
+            kable_classic(full_width = T) %>%
+            kable_styling(bootstrap_options = "striped", font_size = 12) %>%
+                                        #add_header_above(c(" " = 1, "Fixed" = 6, "Random" = 1, "Total" = 2)) %>%
+            ##as_image(file = "../output/figures/test.png")
+            ##save_kable("../output/figures/test.png")
+            ## knitr::knit_print()
+        print()
+        ##     gt() %>%
+        ##     gt::tab_spanner_delim(delim = "__", columns = everything(), split = "last") %>%
+        ##     sub_missing(everything(), everything(), missing_text = "") %>%
+        ##     gtExtras::gt_plt_sparkline(Trend, same_limit = FALSE) %>%
+        ##      as_raw_html() %>% print()
+
+if (1==2) {
+
+        
+
+## library(gtExtras)
+##         dplyr::tibble(
+##                                       mean = c(12, 10), ci1 = c(8, 5), ci2 = c(16, 15),
+##                                       ci_plot = c(12, 10)
+##                                   ) %>%
+##             gt::gt() %>%
+##             gt_plt_conf_int(
+##                 ci_plot, c(ci1, ci2),
+##                 palette = c("red", "lightgrey", "black", "red")
+##             ) %>%
+##             cols_hide(c(mean, ci1, ci2))
+
+        as_tibble(a) %>%
+            mutate(term = str_replace(term, 'sd__', "")) %>%
+            dplyr::select(-std.error, -statistic, -p.value) %>% 
+            filter(!(term == "(Intercept)" & effect == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+            dplyr::select(-component) %>%
+            mutate(term = paste0(group,term)) %>%
+            ## arrange(ZoneName, effect, term) %>%
+            mutate(term = str_replace(term, "WQ_SITE\\(Intercept\\)", "Site (SD)")) %>%
+            dplyr::select(-group) %>%
+            ## unite(col = 'Name', effect, term, sep = "__",na.rm = FALSE) %>%
+                                        #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+            ## unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+            ## mutate(Name = str_replace_all(Name, "NA","")) %>% 
+            ## mutate(Name = str_replace(Name, "poly\\(DV, 3\\)1", "DV (Linear)")) %>%
+            ## mutate(Name = str_replace(Name, "poly\\(DV, 3\\)2", "DV (Quadratic)")) %>%
+            ## mutate(Name = str_replace(Name, "poly\\(DV, 3\\)3", "DV (Cubic)")) %>%
+            ## mutate(Name = str_replace(Name, "fixed", "Fixed")) %>%
+            ## mutate(Name = str_replace(Name, "ran_pars", "Random")) %>%
+            ## arrange(Name) %>%
+            ## pivot_longer(cols = c(estimate, conf.low, conf.high),
+            ##              names_to = 'Stat',
+            ##              values_to = 'Values') %>%
+            ## unite(Name, Name, Stat, sep='__')
+            ## pivot_wider(id_cols = everything(),
+            ##             names_from = Name,
+            ##             values_from = Parameter) %>%
+            arrange(ZoneName) %>%
+            ## rename(Zone = ZoneName) -> b
+
+            ## full_join(R2) %>%
+    filter(ZoneName != "West Arm") %>%
+    gt(groupname_col = "ZoneName", rowname_col = "effect") %>%
+    ## gt() %>%
+    gt_plt_conf_int(estimate, c(conf.low, conf.high),
+                    ref_line = 0) %>%
+    cols_hide(c(conf.low, conf.high))
+        
+            as.data.frame %>% head()
+
+##======================
+}
+
+
+
+
+
+
+
+
+
+
+
+        
+  ##       data.EDA.mod.sum <- readRDS(file = paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",j,"__",MEASURE,".RData"))
+  ##       parameters::compare_models(data.EDA.mod$Mod,
+  ##                                  column_names = data.EDA.mod$ZoneName,
+  ##                                  effects = 'all',
+  ##                                  exponentiate = FALSE) -> a
+
+  ##       R2 <- data.EDA.mod %>% mutate(R2c = map(.x = R2, .f = ~ .x[3,1])) %>% unnest(R2c) %>% dplyr::select(ZoneName, R2c) %>% mutate(Effects = 'fixed') %>% mutate(Group = "", Parameter = "DV", Stat = "R2c") %>% rename(value = R2c)
+        
+
+        
+  ##       as_tibble(a) %>%
+  ##           pivot_longer(cols = c(-Parameter, -Component, -Effects, -Group)) %>% 
+  ##           separate(name, into = c('Stat', 'ZoneName'), sep = '\\.') %>%
+  ##                                       #mutate(Group = ifelse(Group =="", "A", Group)) %>%
+  ##           full_join(R2) %>%
+  ##           filter(!Stat %in% c('z', 'df_error', 'p', 'SE', 'CI')) %>%
+  ##           filter(!(Parameter == "(Intercept)" & Effects == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+  ##           dplyr::select(-Component) %>%
+  ##           mutate(Parameter = paste0(Group,Parameter)) %>%
+  ##           dplyr::select(-Group) %>%
+  ##           ## pivot_wider(id_cols = everything(),
+  ##           ##             names_from = Stat,
+  ##           ##             values_from = value)
+  ##                                       #unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat,) %>%
+  ##           unite(col = 'Name', Effects, Parameter, sep = "__",na.rm = FALSE) %>%
+  ##                                       #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+  ##           unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+            
+  ##           pivot_wider(id_cols = everything(),
+  ##                       names_from = Parameter,
+  ##                       values_from = value) -> b
+
+  ##       b %>% gt() %>%
+  ## gt::tab_spanner_delim(delim = "__", columns = everything(), split = "last") 
+        
+  ##       as_tibble(a) %>%
+  ##           pivot_longer(cols = c(-Parameter, -Component, -Effects, -Group)) %>%
+  ##           separate(name, into = c('Stat', 'ZoneName'), sep = '\\.') %>%
+  ##           ## dplyr::select(-Component, -Effects, -Group) %>%
+  ##          unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat) %>% 
+  ##           pivot_wider(id_cols = everything(),
+  ##                       names_from = Parameter,
+  ##                       values_from = value) %>% gt()
+        cat(paste0("\n::::::\n\n"))
+    }
+    cat(paste0("\n:::::\n\n"))
+
+
+
+
+
+        
+    
+}
+
+
+
+
+```
+<!--
+**LOOK INTO PROBABILITY OF DIRECTION**
+
+**easy-stats** packages
+
+            ## parameters::compare_models(data.EDA.mod$Mod,
+            ##                            column_names = data.EDA.mod$ZoneName)
+            ## parameters::compare_parameters(data.EDA.mod$Mod,
+            ##                            column_names = data.EDA.mod$ZoneName)
+-->
+
+::::
+
+:::
+
+# Exploratory data analyses (spatio-temporal aggregation)
+
+
+
+
+
+## put this all back
+
+
+    cap <- paste0("Temporal trends in ",lab,
+                  " (orange) and ", MEASURE_lab, " (purple) within each of the Zones. ",
+                  "Points represent collected observations at unique lat/long/Year combinations.  Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time.  Solid lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes.  Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms).")
+        cat(paste0("![",cap,"](../output/figures/gamPlots__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### Partial plots\n"))
+        cat(paste0("![",cap,"](../output/figures/partial__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### DHARMa residual uniformity\n"))
+        cat(paste0("![",cap,"](../output/figures/DHARMa_unif__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+        cat(paste0("\n#### DHARMa residual quantiles\n"))
+        cat(paste0("![",cap,"](../output/figures/DHARMa_quant__",j,"__",MEASURE,".png){#fig-EDA-",j,".",MEASURE,"} \n\n"))
+
+        cat(paste0("\n#### Summary Tables\n"))
+        data.EDA.mod.sum <- readRDS(file = paste0(DATA_PATH,"summarised/data.EDA.mod.sum__",
+                                                  j,"__",MEASURE,".RData"))
+        R2 <- data.EDA.mod.sum %>%
+            mutate(R2c = map(.x = R2, .f = ~ .x[3,1])) %>%
+            mutate(R2m = map(.x = R2, .f = ~ .x[3,2])) %>%
+            dplyr::select(ZoneName, R2c, R2m) %>%
+            unnest(c(R2c, R2m)) %>%
+            pivot_longer(cols = c(R2c, R2m),
+                         names_to = "term") %>%
+            mutate(effect = ifelse(term == 'R2c','fixed','Total')) %>%
+            mutate(group = "") %>%
+            mutate(Parameter = sprintf("% 0.3f",value)) %>%
+            dplyr::select(-value)
+        Emmeans <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+            unnest(Emmeans) %>%
+            group_by(ZoneName) %>%
+            summarise(Emmeans = list(response), .groups = "drop")
+
+        EM <- data.EDA.mod.sum %>% dplyr::select(ZoneName, Emmeans) %>%
+            unnest(Emmeans) %>%
+            {split(.$response, .$ZoneName)}
+        
+        data.EDA.mod.sum %>% dplyr::select(ZoneName, Params2) %>% unnest(Params2) -> a
+
+        as_tibble(a) %>%
+            mutate(term = str_replace(term, 'sd__', "")) %>%
+            ## mutate(Parameter = paste(insight::format_value(estimate,),
+            ##                           insight::format_ci(conf.low, conf.high, ci = NULL))) %>%
+            mutate(Parameter = sprintf("% 0.3f\n[% 2.3f,% 2.3f]", estimate,conf.low, conf.high)) %>%
+            mutate(Parameter = str_replace_all(Parameter, "NA|NaN|Inf","")) %>%
+            mutate(Parameter = replace_na(Parameter, "")) %>%
+            ## mutate(Parameter = str_glue("{format(estimate,justify = 'left', digits = 3, scientific = FALSE)}")) %>%
+            dplyr::select(-std.error, -statistic, -p.value, -estimate, -conf.low, -conf.high) %>% 
+            full_join(R2) %>%
+            ## filter(!Stat %in% c('z', 'df_error', 'p', 'SE', 'CI')) %>%
+            filter(!(term == "(Intercept)" & effect == "fixed")) %>% #dplyr::select(-Parameter) %>% 
+            dplyr::select(-component) %>%
+            mutate(term = paste0(group,term)) %>%
+            ## arrange(ZoneName, effect, term) %>%
+            mutate(term = str_replace(term, "WQ_SITE\\(Intercept\\)", "Site (SD)")) %>%
+            dplyr::select(-group) %>%
+            ## pivot_wider(id_cols = everything(),
+            ##             names_from = Stat,
+            ##             values_from = value)
+                                        #unite(col = 'Parameter', Effects, Component, Group, Parameter, Stat,) %>%
+            unite(col = 'Name', effect, term, sep = "__",na.rm = FALSE) %>%
+                                        #unite(col = 'Name', Name, Parameter, sep = "__") %>%
+            ## unite(col = 'Parameter', Name, Stat, sep = "__") %>%
+            mutate(Name = str_replace_all(Name, "NA","")) %>% 
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)1", "DV (Linear)")) %>%
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)2", "DV (Quadratic)")) %>%
+            mutate(Name = str_replace(Name, "poly\\(DV, 3\\)3", "DV (Cubic)")) %>%
+            mutate(Name = str_replace(Name, "fixed", "Fixed")) %>%
+            mutate(Name = str_replace(Name, "ran_pars", "Random")) %>%
+            arrange(Name) %>%
+            pivot_wider(id_cols = everything(),
+                        names_from = Name,
+                        values_from = Parameter) %>%
+            arrange(ZoneName) %>%
+            rename(Zone = ZoneName) -> b
+ 
+        library(kableExtra)
+        ##library(webshot)
+        b %>%
+            full_join(Emmeans %>% rename(Zone = ZoneName)) %>%
+            dplyr::rename(Total__Trend = Emmeans) %>%
+            dplyr::mutate(Total__Trend = "") %>% 
+                                        #dplyr::select(-Trend) %>%
+            mutate(across(matches("DV|Year|Random"), ~replace_na(.x, " "))) %>%
+            kable(escape = FALSE) %>%
+            column_spec(ncol(b)+1, image = spec_plot(EM, same_lim = FALSE)) %>%
+            header_separate(sep="__") %>%
+            kable_classic(full_width = T) %>%
+            kable_styling(bootstrap_options = "striped", font_size = 12) %>%
+                                        #add_header_above(c(" " = 1, "Fixed" = 6, "Random" = 1, "Total" = 2)) %>%
+        print()
+
+
+        cat(paste0("\n::::::\n\n"))
+    }
+    cat(paste0("\n:::::\n\n"))
+
+
+
