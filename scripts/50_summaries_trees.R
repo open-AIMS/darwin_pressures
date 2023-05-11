@@ -14,7 +14,7 @@ tree_stats <- files %>%
     map(.f = ~ readRDS(.x)) %>%
     map(.f = function(x) {
         x[["Assoc"]] = x[["Assoc"]] %>%
-            dplyr::select(-value, -pred, -Obs, -Corr, -R2, -Min, -Max, -g)
+            dplyr::select(-value, -pred, -Obs, -Corr, -R2, -R2.sum, -R2.2, -Min, -Max, -g)
         x
         }) %>%
     ## map(.x, .f = ~ .x[["Assoc"]] <- .x[["Assoc"]][,c(-value, -pred, -Obs, -Corr, -R2)])
@@ -35,28 +35,32 @@ tree_stats <- files %>%
             as_tibble()) %>% 
     map(.f = ~ .x %>%
             mutate(FOCAL_PRED = Assoc['name'][[1]]) %>%
-            mutate(R2 = map(.x = Assoc['R2.sum'][[1]],
+            mutate(R2 = map(.x = Assoc['R2.2.sum'][[1]], 
                             .f = ~ round(.x$Median, 3))
                    ) %>%
+            mutate(Trend = map(.x = Assoc['ES'][[1]],
+                               .f = ~ .x)) %>% 
+            mutate(R2trend = map2(.x = R2, .y = Trend,
+                                  .f = ~ ifelse(.y$Trend == 'Negative', -1, 1) * .x)) %>% 
             mutate(Corr = map(.x = Assoc['Corr.sum'][[1]],
-                            .f = ~ round(.x$Median, 3))
+                              .f = ~ round(.x$Median, 3))
                    ) %>%
-            unnest(c(FOCAL_PRED, Corr,R2)) %>%
-            dplyr::select(FOCAL_RESP, Type, ZoneName, include_lags, FOCAL_PRED, Corr, R2)
+            unnest(c(FOCAL_PRED, Corr,R2, Trend, R2trend)) %>%
+            dplyr::select(FOCAL_RESP, Type, ZoneName, include_lags, FOCAL_PRED,
+                          Corr, R2, Trend, R2trend)
         )
 ## ----end
-
 ## ---- 50_summaries corr and R2 tables
 corr.tab <- tree_stats %>% bind_rows() %>%
-    pivot_wider(id_cols = -R2,
+    pivot_wider(id_cols = c(-R2, -Trend, -R2trend),
                 names_from = FOCAL_RESP,
                 values_from = Corr
                 )
 
 R2.tab <- tree_stats %>% bind_rows() %>%
-    pivot_wider(id_cols = -Corr,
+    pivot_wider(id_cols = c(-Corr, -R2, -Trend),
                 names_from = FOCAL_RESP,
-                values_from = R2
+                values_from = R2trend
                 )
 save(corr.tab, R2.tab,
      file = paste0(DATA_PATH, 'modelled/Tables.RData'))
