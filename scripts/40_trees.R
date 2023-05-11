@@ -22,6 +22,25 @@ bootstrappPredictions <- function(mod, newdata, n.trees) {
         bind_cols(newdata)
 }
 
+
+bootstrappPreds <- function(mod, newdata, n.trees) {
+    pmap(.l = list(mod, n.trees),
+         .f = ~ newdata %>%
+             mutate(n = 1:n(),
+                    Pred = predict(..1, newdata, n.trees = ..2),
+                    Fit = exp(Pred)) %>%
+             as.data.frame()) %>%
+        enframe(name = "Boot") %>%
+        unnest(value) ## %>%
+        ## group_by(n) %>% 
+        ## summarise(Mean = mean(Fit),
+        ##           Median = median(Fit),
+        ##           Lower = quantile(Fit, p = 0.025),
+        ##           Upper = quantile(Fit, p = 0.975)) %>%
+        ## bind_cols(newdata)
+}
+
+
 R2 <- function(.x) {
     .x <- .x %>% mutate(Value = Value^2) 
 }
@@ -35,6 +54,25 @@ summ <- function(.x) {
     }
 
 Corr <- function(mod, newdata, Resp, n.trees) {
+    Resp <- Resp %>% setNames('Obs')
+    pmap(.l = list(mod, n.trees),
+         .f = ~ {
+             ## print(..3)
+             newdata %>%
+             mutate(n = 1:n(),
+                    Pred = predict(..1, newdata, n.trees = ..2),
+                    Fit = exp(Pred)) %>%
+                 as.data.frame()
+             }) %>%
+        enframe(name = "Boot") %>%
+        mutate(value = map(.x = value, .f = ~ .x %>% cbind(Resp)),
+               Value = map(.x = value, .f = ~ cor(.x$Fit, .x$Obs)),
+               Value = ifelse(is.na(Value), 0, Value)) %>% 
+        unnest(Value) %>%
+        dplyr::select(Value)
+    }
+
+Rsqu <- function(mod, newdata, Resp, n.trees) {
     Resp <- Resp %>% setNames('Obs')
     pmap(.l = list(mod, n.trees),
          .f = ~ {
@@ -118,6 +156,16 @@ remove_terms <- function(form, term) {
   return(formula(new_fterms))
 }
 
+LinearES <- function(Fit, Predictor_value) {
+    len <- length(Fit)
+    rise <- Fit[len] - Fit[1]
+    run <- Predictor_value[len] - Predictor_value[1]
+    rise/run
+}
+ES <- function(Fit) {
+    len <- length(Fit)
+    Fit[len]/Fit[1]
+}
 
 fitTreeModel <- function(data, boot = 1, include_lags = FALSE) {
     ## set_cores()
@@ -258,6 +306,8 @@ cat(paste0("Resps,Preds,Lag,Type\n"),
     file = paste0(DATA_PATH, "modelled/log_trees.csv"))
 ## ----end
 
+refit <- FALSE
+
 if (1==2) {
     ## DONE
 ## ---- Trees fit model Routine no lags whole harbour
@@ -270,8 +320,11 @@ for (j in FOCAL_RESPS) {
                Measure = j,
                Value = ifelse(Value == 0, 0.01, Value))
     ## fit the model
-    mod <- fitTreeModel(data.resp, boot = 100)
-    save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_', j, '.RData'))
+    if (refit) {
+        mod <- fitTreeModel(data.resp, boot = 100)
+        save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_', j, '.RData'))
+    }
+    load(file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_', j, '.RData'))
     ## determine the best number of trees
     n.trees <- lapply(mod, gbm.perf, method = 'cv')
 
@@ -313,19 +366,42 @@ for (j in FOCAL_RESPS) {
         filter(Influential) %>% pull(Predictor)
     iterms <- iterms %>% setNames(iterms)
     a <- imap(.x = iterms,
-             .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
+              .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
         enframe() %>%
+        mutate(preds = map(.x = value,
+                          .f = ~ bootstrappPreds(mod, .x, n.trees))
+               ) %>% 
+        mutate(ES = map(.x = preds,
+                               .f = ~ {
+                                   .x %>% group_by(Boot) %>%
+                                       mutate(LinearES = LinearES(Fit, Predictor_value)) %>%
+                                       mutate(ES = ES(Fit)) %>%
+                                       ungroup() %>%
+                                       summarise(
+                                           across(c(LinearES, ES),
+                                                  list(Mean = mean,
+                                                       Median = median,
+                                                       Lower = ~ quantile(.x, p = 0.025),
+                                                       Upper = ~ quantile(.x, p = 0.975)))) %>%
+                                       mutate(Trend = ifelse(LinearES_Median>0, 'Positive', 'Negative'))
+                               })) %>%
         mutate(pred = map(.x = value,
                           .f = ~ bootstrappPredictions(mod, .x, n.trees))
-                          ) %>% 
+               ) %>% 
         mutate(Obs = pmap(.l = list(name),
                           .f = ~ make_obs_prediction_grid(..1,
-                                                          data.resp = data %>% filter(!is.na(!!sym(j))))),
+                                                          data.resp = data.resp %>% filter(!is.na(!!sym(j))))),
+               ## Correlation between obs and predicted - not all that useful
+               ## (except as a stepping stone for one way to calculate R2)
                Corr = pmap(.l = list(Obs),
-                           .f = ~ Corr(mod, ..1, na.omit(data[,j]), n.trees)),
+                           .f = ~ Corr(mod, ..1, na.omit(data.resp[,j]), n.trees)),
                Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                R2 = map(.x = Corr, .f = ~ R2(.x)),
-               R2.sum = map(.x = R2, .f = ~ summ(.x))
+               R2.sum = map(.x = R2, .f = ~ summ(.x)),
+               ## R2 calculated as 1 - (var(Pred - Obs)/var(Obs))
+               R2.2 = pmap(.l = list(Obs),
+                           .f = ~ Rsqu(mod, ..1, na.omit(data.resp[,j]), n.trees)),
+               R2.2.sum = map(.x = R2.2, .f = ~ summ(.x))
                ) %>% 
         ## mutate(pred = map(.x = value,
         ##                   .f = ~ .x %>%
@@ -337,7 +413,7 @@ for (j in FOCAL_RESPS) {
         unnest(Range) %>%
         mutate(Min = min(Min),
                Max = max(Max)) %>%
-        mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
+        mutate(g = pmap(.l = list(pred, name, Min, Max, R2.2.sum),
                         .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
     metadata <- list(FOCAL_RESP = j,
                      Type = 'Routine',
@@ -354,6 +430,7 @@ for (j in FOCAL_RESPS) {
 ## ----end
 }
 
+
 if (1==2) {
     ## Not DONE 22076
 ## ---- Trees fit model Routine with lags whole harbour
@@ -366,8 +443,11 @@ for (j in FOCAL_RESPS) {
                Measure = j,
                Value = ifelse(Value == 0, 0.01, Value))
     ## fit the model
-    mod <- fitTreeModel(data.resp, boot = 100, include_lags = TRUE)
-    save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_lags_', j, '.RData'))
+    if (refit) {
+        mod <- fitTreeModel(data.resp, boot = 100, include_lags = TRUE)
+        save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_lags_', j, '.RData'))
+    }
+    load(file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_lags_', j, '.RData'))
     ## determine the best number of trees
     n.trees <- lapply(mod, gbm.perf, method = 'cv')
 
@@ -420,17 +500,37 @@ for (j in FOCAL_RESPS) {
     a <- imap(.x = iterms,
              .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
         enframe() %>%
+        mutate(preds = map(.x = value,
+                          .f = ~ bootstrappPreds(mod, .x, n.trees))
+               ) %>% 
+        mutate(ES = map(.x = preds,
+                               .f = ~ {
+                                   .x %>% group_by(Boot) %>%
+                                       mutate(LinearES = LinearES(Fit, Predictor_value)) %>%
+                                       mutate(ES = ES(Fit)) %>%
+                                       ungroup() %>%
+                                       summarise(
+                                           across(c(LinearES, ES),
+                                                  list(Mean = mean,
+                                                       Median = median,
+                                                       Lower = ~ quantile(.x, p = 0.025),
+                                                       Upper = ~ quantile(.x, p = 0.975)))) %>%
+                                       mutate(Trend = ifelse(LinearES_Median>0, 'Positive', 'Negative'))
+                               })) %>%
         mutate(pred = map(.x = value,
                           .f = ~ bootstrappPredictions(mod, .x, n.trees))
                           ) %>% 
         mutate(Obs = pmap(.l = list(name),
                           .f = ~ make_obs_prediction_grid(..1,
-                                                          data.resp = data %>% filter(!is.na(!!sym(j))))),
+                                                          data.resp = data.resp %>% filter(!is.na(!!sym(j))))),
                Corr = pmap(.l = list(Obs),
-                           .f = ~ Corr(mod, ..1, na.omit(data[,j]), n.trees)),
+                           .f = ~ Corr(mod, ..1, na.omit(data.resp[,j]), n.trees)),
                Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                R2 = map(.x = Corr, .f = ~ R2(.x)),
-               R2.sum = map(.x = R2, .f = ~ summ(.x))
+               R2.sum = map(.x = R2, .f = ~ summ(.x)),
+               R2.2 = pmap(.l = list(Obs),
+                           .f = ~ Rsqu(mod, ..1, na.omit(data.resp[,j]), n.trees)),
+               R2.2.sum = map(.x = R2.2, .f = ~ summ(.x))
                )%>% 
         ## mutate(pred = map(.x = value,
         ##                   .f = ~ .x %>%
@@ -442,7 +542,7 @@ for (j in FOCAL_RESPS) {
         unnest(Range) %>%
         mutate(Min = min(Min),
                Max = max(Max)) %>%
-        mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
+        mutate(g = pmap(.l = list(pred, name, Min, Max, R2.2.sum),
                         .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
     metadata <- list(FOCAL_RESP = j,
@@ -473,8 +573,11 @@ for (j in FOCAL_RESPS) {
                Measure = j,
                Value = ifelse(Value == 0, 0.01, Value))
     ## fit the model
-    mod <- fitTreeModel(data.resp, boot = 100)
-    save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_', j, '.RData'))
+    if (refit) {
+        mod <- fitTreeModel(data.resp, boot = 100)
+        save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_', j, '.RData'))
+    }
+    load(file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_', j, '.RData'))
     ## determine the best number of trees
     n.trees <- lapply(mod, gbm.perf, method = 'cv')
 
@@ -519,17 +622,37 @@ for (j in FOCAL_RESPS) {
     a <- imap(.x = iterms,
              .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
         enframe() %>%
+        mutate(preds = map(.x = value,
+                          .f = ~ bootstrappPreds(mod, .x, n.trees))
+               ) %>% 
+        mutate(ES = map(.x = preds,
+                               .f = ~ {
+                                   .x %>% group_by(Boot) %>%
+                                       mutate(LinearES = LinearES(Fit, Predictor_value)) %>%
+                                       mutate(ES = ES(Fit)) %>%
+                                       ungroup() %>%
+                                       summarise(
+                                           across(c(LinearES, ES),
+                                                  list(Mean = mean,
+                                                       Median = median,
+                                                       Lower = ~ quantile(.x, p = 0.025),
+                                                       Upper = ~ quantile(.x, p = 0.975)))) %>%
+                                       mutate(Trend = ifelse(LinearES_Median>0, 'Positive', 'Negative'))
+                               })) %>%
         mutate(pred = map(.x = value,
                           .f = ~ bootstrappPredictions(mod, .x, n.trees))
                           ) %>% 
         mutate(Obs = pmap(.l = list(name),
                           .f = ~ make_obs_prediction_grid(..1,
-                                                          data.resp = data %>% filter(!is.na(!!sym(j))))),
+                                                          data.resp = data.resp %>% filter(!is.na(!!sym(j))))),
                Corr = pmap(.l = list(Obs),
-                           .f = ~ Corr(mod, ..1, na.omit(data[,j]), n.trees)),
+                           .f = ~ Corr(mod, ..1, na.omit(data.resp[,j]), n.trees)),
                Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                R2 = map(.x = Corr, .f = ~ R2(.x)),
-               R2.sum = map(.x = R2, .f = ~ summ(.x))
+               R2.sum = map(.x = R2, .f = ~ summ(.x)),
+               R2.2 = pmap(.l = list(Obs),
+                           .f = ~ Rsqu(mod, ..1, na.omit(data.resp[,j]), n.trees)),
+               R2.2.sum = map(.x = R2.2, .f = ~ summ(.x))
                )%>% 
         ## mutate(pred = map(.x = value,
         ##                   .f = ~ .x %>%
@@ -541,7 +664,7 @@ for (j in FOCAL_RESPS) {
         unnest(Range) %>%
         mutate(Min = min(Min),
                Max = max(Max)) %>%
-        mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
+        mutate(g = pmap(.l = list(pred, name, Min, Max, R2.2.sum),
                         .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
     metadata <- list(FOCAL_RESP = j,
@@ -574,8 +697,11 @@ for (j in FOCAL_RESPS) {
                Measure = j,
                Value = ifelse(Value == 0, 0.01, Value))
     ## fit the model
-    mod <- fitTreeModel(data.resp, boot = 100, include_lags = TRUE)
-    save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_lags_', j, '.RData'))
+    if (refit) {
+        mod <- fitTreeModel(data.resp, boot = 100, include_lags = TRUE)
+        save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_lags_', j, '.RData'))
+    }
+    load(file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_lags_', j, '.RData'))
     ## determine the best number of trees
     n.trees <- lapply(mod, gbm.perf, method = 'cv')
 
@@ -627,17 +753,37 @@ for (j in FOCAL_RESPS) {
     a <- imap(.x = iterms,
              .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
         enframe() %>%
+        mutate(preds = map(.x = value,
+                          .f = ~ bootstrappPreds(mod, .x, n.trees))
+               ) %>% 
+        mutate(ES = map(.x = preds,
+                               .f = ~ {
+                                   .x %>% group_by(Boot) %>%
+                                       mutate(LinearES = LinearES(Fit, Predictor_value)) %>%
+                                       mutate(ES = ES(Fit)) %>%
+                                       ungroup() %>%
+                                       summarise(
+                                           across(c(LinearES, ES),
+                                                  list(Mean = mean,
+                                                       Median = median,
+                                                       Lower = ~ quantile(.x, p = 0.025),
+                                                       Upper = ~ quantile(.x, p = 0.975)))) %>%
+                                       mutate(Trend = ifelse(LinearES_Median>0, 'Positive', 'Negative'))
+                               })) %>%
         mutate(pred = map(.x = value,
                           .f = ~ bootstrappPredictions(mod, .x, n.trees))
                           ) %>% 
         mutate(Obs = pmap(.l = list(name),
                           .f = ~ make_obs_prediction_grid(..1,
-                                                          data.resp = data %>% filter(!is.na(!!sym(j))))),
+                                                          data.resp = data.resp %>% filter(!is.na(!!sym(j))))),
                Corr = pmap(.l = list(Obs),
-                           .f = ~ Corr(mod, ..1, na.omit(data[,j]), n.trees)),
+                           .f = ~ Corr(mod, ..1, na.omit(data.resp[,j]), n.trees)),
                Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                R2 = map(.x = Corr, .f = ~ R2(.x)),
-               R2.sum = map(.x = R2, .f = ~ summ(.x))
+               R2.sum = map(.x = R2, .f = ~ summ(.x)),
+               R2.2 = pmap(.l = list(Obs),
+                           .f = ~ Rsqu(mod, ..1, na.omit(data.resp[,j]), n.trees)),
+               R2.2.sum = map(.x = R2.2, .f = ~ summ(.x))
                )%>% 
         ## mutate(pred = map(.x = value,
         ##                   .f = ~ .x %>%
@@ -649,7 +795,7 @@ for (j in FOCAL_RESPS) {
         unnest(Range) %>%
         mutate(Min = min(Min),
                Max = max(Max)) %>%
-        mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
+        mutate(g = pmap(.l = list(pred, name, Min, Max, R2.2.sum),
                         .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
     metadata <- list(FOCAL_RESP = j,
@@ -668,7 +814,7 @@ for (j in FOCAL_RESPS) {
 }
 
 
-if (1==1) {
+if (1==2) {
     ## Not DONE 22168
 ## ---- Trees fit model Routine no lags by Zones
 for (j in FOCAL_RESPS) {
@@ -683,8 +829,11 @@ for (j in FOCAL_RESPS) {
                    Value = ifelse(Value == 0, 0.01, Value))
         if (nrow(data.resp) == 0) next
         ## fit the model
-        mod <- fitTreeModel(data.resp, boot = 100)
-        save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_', j,'__',k, '.RData'))
+        if (refit) {
+            mod <- fitTreeModel(data.resp, boot = 100)
+            save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_', j,'__',k, '.RData'))
+        }
+        load(file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_', j,'__',k, '.RData'))
         ## remove NULLS
         mod[sapply(mod, is.null)] <- NULL
         if (length(mod) == 0) next
@@ -693,7 +842,10 @@ for (j in FOCAL_RESPS) {
 
         ## n.trees <- gbm.perf(mod, method = 'OOB')
         ## get relative influences
-        terms <- attr(mod[[1]]$Terms, 'term.labels')
+        terms <- NULL
+        for (t in 1:length(mod)) {
+            terms <- unique(c(terms, attr(mod[[t]]$Terms, 'term.labels')))
+        }
         preds <- data.frame(terms) %>% mutate(TermNumber = 1:n())
         sum.tab <- pmap(.l = list(mod, n.trees),
                         .f = ~ summary(..1, n.trees = ..2) %>%
@@ -732,17 +884,37 @@ for (j in FOCAL_RESPS) {
         a <- imap(.x = iterms,
                   .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
             enframe() %>%
+            mutate(preds = map(.x = value,
+                               .f = ~ bootstrappPreds(mod, .x, n.trees))
+                   ) %>% 
+            mutate(ES = map(.x = preds,
+                            .f = ~ {
+                                .x %>% group_by(Boot) %>%
+                                    mutate(LinearES = LinearES(Fit, Predictor_value)) %>%
+                                    mutate(ES = ES(Fit)) %>%
+                                    ungroup() %>%
+                                    summarise(
+                                        across(c(LinearES, ES),
+                                               list(Mean = mean,
+                                                    Median = median,
+                                                    Lower = ~ quantile(.x, p = 0.025),
+                                                    Upper = ~ quantile(.x, p = 0.975)))) %>%
+                                    mutate(Trend = ifelse(LinearES_Median>0, 'Positive', 'Negative'))
+                            })) %>%
             mutate(pred = map(.x = value,
                               .f = ~ bootstrappPredictions(mod, .x, n.trees))
                    ) %>% 
             mutate(Obs = pmap(.l = list(name),
                               .f = ~ make_obs_prediction_grid(..1,
-                                                              data.resp = data %>% filter(!is.na(!!sym(j))))),
+                                                              data.resp = data.resp %>% filter(!is.na(!!sym(j))))),
                    Corr = pmap(.l = list(Obs),
-                               .f = ~ Corr(mod, ..1, na.omit(data[,j]), n.trees)),
+                               .f = ~ Corr(mod, ..1, na.omit(data.resp[,j]), n.trees)),
                    Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                    R2 = map(.x = Corr, .f = ~ R2(.x)),
-                   R2.sum = map(.x = R2, .f = ~ summ(.x))
+                   R2.sum = map(.x = R2, .f = ~ summ(.x)),
+                   R2.2 = pmap(.l = list(Obs),
+                               .f = ~ Rsqu(mod, ..1, na.omit(data.resp[,j]), n.trees)),
+                   R2.2.sum = map(.x = R2.2, .f = ~ summ(.x))
                    )%>% 
             ## mutate(pred = map(.x = value,
             ##                   .f = ~ .x %>%
@@ -754,7 +926,7 @@ for (j in FOCAL_RESPS) {
             unnest(Range) %>%
             mutate(Min = min(Min),
                    Max = max(Max)) %>%
-            mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
+            mutate(g = pmap(.l = list(pred, name, Min, Max, R2.2.sum),
                             .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
 
@@ -810,8 +982,11 @@ for (j in FOCAL_RESPS) {
                    Value = ifelse(Value == 0, 0.01, Value))
         if (nrow(data.resp) == 0) next
         ## fit the model
-        mod <- fitTreeModel(data.resp, boot = 100)
-        save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_', j,'__',k, '.RData'))
+        if (refit) {
+            mod <- fitTreeModel(data.resp, boot = 100)
+            save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_', j,'__',k, '.RData'))
+        }
+        load(file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_', j,'__',k, '.RData'))
         ## remove NULLS
         mod[sapply(mod, is.null)] <- NULL
         if (length(mod) == 0) next
@@ -820,7 +995,10 @@ for (j in FOCAL_RESPS) {
 
         ## n.trees <- gbm.perf(mod, method = 'OOB')
         ## get relative influences
-        terms <- attr(mod[[1]]$Terms, 'term.labels')
+        terms <- NULL
+        for (t in 1:length(mod)) {
+            terms <- unique(c(terms, attr(mod[[t]]$Terms, 'term.labels')))
+        }
         preds <- data.frame(terms) %>% mutate(TermNumber = 1:n())
         sum.tab <- pmap(.l = list(mod, n.trees),
                         .f = ~ summary(..1, n.trees = ..2) %>%
@@ -876,17 +1054,37 @@ for (j in FOCAL_RESPS) {
         a <- imap(.x = iterms,
                   .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
             enframe() %>%
+            mutate(preds = map(.x = value,
+                               .f = ~ bootstrappPreds(mod, .x, n.trees))
+                   ) %>% 
+            mutate(ES = map(.x = preds,
+                            .f = ~ {
+                                .x %>% group_by(Boot) %>%
+                                    mutate(LinearES = LinearES(Fit, Predictor_value)) %>%
+                                    mutate(ES = ES(Fit)) %>%
+                                    ungroup() %>%
+                                    summarise(
+                                        across(c(LinearES, ES),
+                                               list(Mean = mean,
+                                                    Median = median,
+                                                    Lower = ~ quantile(.x, p = 0.025),
+                                                    Upper = ~ quantile(.x, p = 0.975)))) %>%
+                                    mutate(Trend = ifelse(LinearES_Median>0, 'Positive', 'Negative'))
+                            })) %>%
             mutate(pred = map(.x = value,
                               .f = ~ bootstrappPredictions(mod, .x, n.trees))
                    ) %>% 
             mutate(Obs = pmap(.l = list(name),
                               .f = ~ make_obs_prediction_grid(..1,
-                                                              data.resp = data %>% filter(!is.na(!!sym(j))))),
+                                                              data.resp = data.resp %>% filter(!is.na(!!sym(j))))),
                    Corr = pmap(.l = list(Obs),
-                               .f = ~ Corr(mod, ..1, na.omit(data[,j]), n.trees)),
+                               .f = ~ Corr(mod, ..1, na.omit(data.resp[,j]), n.trees)),
                    Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                    R2 = map(.x = Corr, .f = ~ R2(.x)),
-                   R2.sum = map(.x = R2, .f = ~ summ(.x))
+                   R2.sum = map(.x = R2, .f = ~ summ(.x)),
+                   R2.2 = pmap(.l = list(Obs),
+                               .f = ~ Rsqu(mod, ..1, na.omit(data.resp[,j]), n.trees)),
+                   R2.2.sum = map(.x = R2.2, .f = ~ summ(.x))
                    )%>% 
             ## mutate(pred = map(.x = value,
             ##                   .f = ~ .x %>%
@@ -898,7 +1096,7 @@ for (j in FOCAL_RESPS) {
             unnest(Range) %>%
             mutate(Min = min(Min),
                    Max = max(Max)) %>%
-            mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
+            mutate(g = pmap(.l = list(pred, name, Min, Max, R2.2.sum),
                             .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
 
@@ -935,8 +1133,11 @@ for (j in FOCAL_RESPS) {
                    Value = ifelse(Value == 0, 0.01, Value))
         if (nrow(data.resp) == 0) next
         ## fit the model
-        mod <- fitTreeModel(data.resp, boot = 100, include_lags = TRUE)
-        save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_lags_', j,'__',k, '.RData'))
+        if (refit) {
+            mod <- fitTreeModel(data.resp, boot = 100, include_lags = TRUE)
+            save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_lags_', j,'__',k, '.RData'))
+        }
+        load(file = paste0(DATA_PATH, 'modelled/Trees_mod_discrete_lags_', j,'__',k, '.RData'))
         ## remove NULLS
         mod[sapply(mod, is.null)] <- NULL
         if (length(mod) == 0) next
@@ -945,7 +1146,10 @@ for (j in FOCAL_RESPS) {
 
         ## n.trees <- gbm.perf(mod, method = 'OOB')
         ## get relative influences
-        terms <- attr(mod[[1]]$Terms, 'term.labels')
+        terms <- NULL
+        for (t in 1:length(mod)) {
+            terms <- unique(c(terms, attr(mod[[t]]$Terms, 'term.labels')))
+        }
         preds <- data.frame(terms) %>% mutate(TermNumber = 1:n())
         sum.tab <- pmap(.l = list(mod, n.trees),
                         .f = ~ summary(..1, n.trees = ..2) %>%
@@ -1001,17 +1205,37 @@ for (j in FOCAL_RESPS) {
         a <- imap(.x = iterms,
                   .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
             enframe() %>%
+            mutate(preds = map(.x = value,
+                               .f = ~ bootstrappPreds(mod, .x, n.trees))
+                   ) %>% 
+            mutate(ES = map(.x = preds,
+                            .f = ~ {
+                                .x %>% group_by(Boot) %>%
+                                    mutate(LinearES = LinearES(Fit, Predictor_value)) %>%
+                                    mutate(ES = ES(Fit)) %>%
+                                    ungroup() %>%
+                                    summarise(
+                                        across(c(LinearES, ES),
+                                               list(Mean = mean,
+                                                    Median = median,
+                                                    Lower = ~ quantile(.x, p = 0.025),
+                                                    Upper = ~ quantile(.x, p = 0.975)))) %>%
+                                    mutate(Trend = ifelse(LinearES_Median>0, 'Positive', 'Negative'))
+                            })) %>%
             mutate(pred = map(.x = value,
                               .f = ~ bootstrappPredictions(mod, .x, n.trees))
                    ) %>% 
             mutate(Obs = pmap(.l = list(name),
                               .f = ~ make_obs_prediction_grid(..1,
-                                                              data.resp = data %>% filter(!is.na(!!sym(j))))),
+                                                              data.resp = data.resp %>% filter(!is.na(!!sym(j))))),
                    Corr = pmap(.l = list(Obs),
-                               .f = ~ Corr(mod, ..1, na.omit(data[,j]), n.trees)),
+                               .f = ~ Corr(mod, ..1, na.omit(data.resp[,j]), n.trees)),
                    Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                    R2 = map(.x = Corr, .f = ~ R2(.x)),
-                   R2.sum = map(.x = R2, .f = ~ summ(.x))
+                   R2.sum = map(.x = R2, .f = ~ summ(.x)),
+                   R2.2 = pmap(.l = list(Obs),
+                               .f = ~ Rsqu(mod, ..1, na.omit(data.resp[,j]), n.trees)),
+                   R2.2.sum = map(.x = R2.2, .f = ~ summ(.x))
                    )%>% 
             ## mutate(pred = map(.x = value,
             ##                   .f = ~ .x %>%
@@ -1023,7 +1247,7 @@ for (j in FOCAL_RESPS) {
             unnest(Range) %>%
             mutate(Min = min(Min),
                    Max = max(Max)) %>%
-            mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
+            mutate(g = pmap(.l = list(pred, name, Min, Max, R2.2.sum),
                             .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
 
@@ -1060,8 +1284,11 @@ for (j in FOCAL_RESPS) {
                    Value = ifelse(Value == 0, 0.01, Value))
         if (nrow(data.resp) == 0) next
         ## fit the model
-        mod <- fitTreeModel(data.resp, boot = 100, include_lags = TRUE)
-        save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_lags_', j,'__',k, '.RData'))
+        if (refit) {
+            mod <- fitTreeModel(data.resp, boot = 100, include_lags = TRUE)
+            save(mod, file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_lags_', j,'__',k, '.RData'))
+        }
+        load(file = paste0(DATA_PATH, 'modelled/Trees_mod_routine_lags_', j,'__',k, '.RData'))
         ## remove NULLS
         mod[sapply(mod, is.null)] <- NULL
         if (length(mod) == 0) next
@@ -1070,7 +1297,10 @@ for (j in FOCAL_RESPS) {
 
         ## n.trees <- gbm.perf(mod, method = 'OOB')
         ## get relative influences
-        terms <- attr(mod[[1]]$Terms, 'term.labels')
+        terms <- NULL
+        for (t in 1:length(mod)) {
+            terms <- unique(c(terms, attr(mod[[t]]$Terms, 'term.labels')))
+        }
         preds <- data.frame(terms) %>% mutate(TermNumber = 1:n())
         sum.tab <- pmap(.l = list(mod, n.trees),
                         .f = ~ summary(..1, n.trees = ..2) %>%
@@ -1126,17 +1356,37 @@ for (j in FOCAL_RESPS) {
         a <- imap(.x = iterms,
                   .f = ~ make_prediction_grid(.x, data.resp = data.resp)) %>%
             enframe() %>%
+            mutate(preds = map(.x = value,
+                               .f = ~ bootstrappPreds(mod, .x, n.trees))
+                   ) %>% 
+            mutate(ES = map(.x = preds,
+                            .f = ~ {
+                                .x %>% group_by(Boot) %>%
+                                    mutate(LinearES = LinearES(Fit, Predictor_value)) %>%
+                                    mutate(ES = ES(Fit)) %>%
+                                    ungroup() %>%
+                                    summarise(
+                                        across(c(LinearES, ES),
+                                               list(Mean = mean,
+                                                    Median = median,
+                                                    Lower = ~ quantile(.x, p = 0.025),
+                                                    Upper = ~ quantile(.x, p = 0.975)))) %>%
+                                    mutate(Trend = ifelse(LinearES_Median>0, 'Positive', 'Negative'))
+                            })) %>%
             mutate(pred = map(.x = value,
                               .f = ~ bootstrappPredictions(mod, .x, n.trees))
                    ) %>% 
             mutate(Obs = pmap(.l = list(name),
                               .f = ~ make_obs_prediction_grid(..1,
-                                                              data.resp = data %>% filter(!is.na(!!sym(j))))),
+                                                              data.resp = data.resp %>% filter(!is.na(!!sym(j))))),
                    Corr = pmap(.l = list(Obs),
-                               .f = ~ Corr(mod, ..1, na.omit(data[,j]), n.trees)),
+                               .f = ~ Corr(mod, ..1, na.omit(data.resp[,j]), n.trees)),
                    Corr.sum = map(.x = Corr, .f = ~ summ(.x)), 
                    R2 = map(.x = Corr, .f = ~ R2(.x)),
-                   R2.sum = map(.x = R2, .f = ~ summ(.x))
+                   R2.sum = map(.x = R2, .f = ~ summ(.x)),
+                   R2.2 = pmap(.l = list(Obs),
+                               .f = ~ Rsqu(mod, ..1, na.omit(data.resp[,j]), n.trees)),
+                   R2.2.sum = map(.x = R2.2, .f = ~ summ(.x))
                    )%>% 
             ## mutate(pred = map(.x = value,
             ##                   .f = ~ .x %>%
@@ -1148,7 +1398,7 @@ for (j in FOCAL_RESPS) {
             unnest(Range) %>%
             mutate(Min = min(Min),
                    Max = max(Max)) %>%
-            mutate(g = pmap(.l = list(pred, name, Min, Max, R2.sum),
+            mutate(g = pmap(.l = list(pred, name, Min, Max, R2.2.sum),
                             .f = ~ make_plot(..1, focal_resp = j, focal_pred = ..2, Min = ..3, Max = ..4, R2 = ..5))) 
 
 
