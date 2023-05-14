@@ -79,12 +79,19 @@ FOCAL_RESPS <- var_lookup %>%
         theme_bw() +
         theme(axis.title = element_blank()) +
         guides(fill = guide_legend(ncol = 1)) ->
-        p
-    p
+        p2
+    p2
     ggsave(filename = paste0(FIGS_PATH, "/map_spatial_subcatchments.png"),
            width = 8,
            height = 8,
            dpi = 72)
+    ## ----end
+    ## ---- process data spatial subcatchments map combined
+    ggsave(filename = paste0(FIGS_PATH, "/map_spatial_subcatchments_combined.png"),
+           p + p2,
+           width = 16,
+           height = 8,
+           dpi = 300)
     ## ----end
     cat("Spatial objects processed\n\n")
 }

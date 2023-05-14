@@ -20,6 +20,15 @@ source('../scripts/functions.R')
     ## ---- glimpse WQ 2012_2015
     glimpse(wq)
     ## ----end
+    ## ---- glimpse-like WQ 2012_2015
+    glimpse_like_table(dat = wq) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption("Overview of the supplied 2012-2015 water quality data.",
+                 word_stylename = "Table Caption",
+                 autonum = run_autonum(seq_id = "tab",
+                                       bkm = "dataSource-2015")
+                 )
+    ## ----end
 
     ## ---- get data WQ 2016_2022
     files %>% str_subset("2016") %>%
@@ -32,6 +41,18 @@ source('../scripts/functions.R')
     ## ---- glimpse WQ 2016_2022
     glimpse(wq)
     ## ----end
+    ## ---- glimpse-like WQ 2016_2022
+    glimpse_like_table(dat = wq) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied 2016-2022 water quality data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-2022")
+                 )
+    ## ----end
 
     ## ---- get data WQ 2018 alterations
     wq <- read_csv(file = paste0(DATA_PATH, "primary/wq_2018_editV2.csv"),
@@ -41,6 +62,18 @@ source('../scripts/functions.R')
     ## ---- glimpse WQ 2018 alterations
     glimpse(wq)
     ## ----end
+    ## ---- glimpse-like WQ 2018 alterations
+    glimpse_like_table(dat = wq) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied modified 2018 water quality data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-2018")
+                 )
+    ## ----end
 
     ## ---- get data Routine sites
     routine_sites <- read_csv(file = paste0(DATA_PATH, "primary/Routine Sites and analysis_final.csv"),
@@ -49,6 +82,18 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse WQ Routine sites 
     glimpse(routine_sites)
+    ## ----end
+    ## ---- glimpse-like WQ Routine sites
+    glimpse_like_table(dat = routine_sites) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the lookup of list of routine sites from the water quality data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-routine")
+                 )
     ## ----end
 
 }
@@ -68,6 +113,18 @@ source('../scripts/functions.R')
     ## ---- glimpse PRIMARY
     glimpse(primary)
     ## ----end
+    ## ---- glimpse-like PRIMARY
+    glimpse_like_table(dat = primary) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied point source (total nitrogen, total phosphorus, total suspended solids and volitile suspended solids) data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-primary")
+                 )
+    ## ----end
 
     ## ---- save PRIMARY
     saveRDS(primary, paste0(DATA_PATH, '/primary/primary.RData'))
@@ -84,6 +141,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse ERP
     glimpse(erp)
+    ## ----end
+    ## ---- glimpse-like ERP
+    glimpse_like_table(dat = erp) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied estimated resident population (ERP) and gross regional product (GRP) data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-erp")
+                 )
     ## ----end
 
     ## ---- save ERP
@@ -102,6 +171,18 @@ source('../scripts/functions.R')
     ## ---- glimpse catchmentERP
     glimpse(catchment_erp)
     ## ----end
+    ## ---- glimpse-like catchmentERP
+    glimpse_like_table(dat = catchment_erp) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied catchment estimated resident population (ERP) data population density.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-catchmentERP")
+                 )
+    ## ----end
 
     ## ---- save catchmentERP
     saveRDS(catchment_erp, paste0(DATA_PATH, '/primary/catchment_erp.RData'))
@@ -118,6 +199,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse fire_freq
     glimpse(fire_freq)
+    ## ----end
+    ## ---- glimpse-like fire_freq
+    glimpse_like_table(dat = fire_freq) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied fire frequency data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-firefreq")
+                 )
     ## ----end
 
     ## ---- save fire_freq
@@ -136,6 +229,18 @@ source('../scripts/functions.R')
     ## ---- glimpse fire_areas
     glimpse(fire_areas)
     ## ----end
+    ## ---- glimpse-like fire_areas
+    glimpse_like_table(dat = fire_areas) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied fire frequency data in area.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-fireareas")
+                 )
+    ## ----end
 
     ## ---- save fire_areas
     saveRDS(fire_areas, paste0(DATA_PATH, '/primary/fire_areas.RData'))
@@ -152,6 +257,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse fire_areas_p
     glimpse(fire_areas_p)
+    ## ----end
+    ## ---- glimpse-like fire_areas_p
+    glimpse_like_table(dat = fire_areas_p) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied fire frequency percentage data in percentages.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-fireareasp")
+                 )
     ## ----end
 
     ## ---- save fire_areas_p
@@ -170,6 +287,18 @@ source('../scripts/functions.R')
     ## ---- glimpse sea_level_cal
     glimpse(sea_level_cal)
     ## ----end
+    ## ---- glimpse-like sea_level_cal
+    glimpse_like_table(dat = sea_level_cal) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied annual sea levels from BOM (calendar years).")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-sealevelcal")
+                 )
+    ## ----end
 
     ## ---- save sea_level_cal
     saveRDS(sea_level_cal, paste0(DATA_PATH, '/primary/sea_level_cal.RData'))
@@ -186,6 +315,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse sea_level_fin
     glimpse(sea_level_fin)
+    ## ----end
+    ## ---- glimpse-like sea_level_fin
+    glimpse_like_table(dat = sea_level_fin) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied annual sea levels from BOM (financial years).")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-sealevelfin")
+                 )
     ## ----end
 
     ## ---- save sea_level_fin
@@ -204,6 +345,18 @@ source('../scripts/functions.R')
     ## ---- glimpse rainfall_cal
     glimpse(rainfall_cal)
     ## ----end
+    ## ---- glimpse-like rainfall_cal
+    glimpse_like_table(dat = sea_level_cal) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied annual total rainfall data (per calendar year).")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-rainfallcal")
+                 )
+    ## ----end
 
     ## ---- save rainfall_cal
     saveRDS(rainfall_cal, paste0(DATA_PATH, '/primary/rainfall_cal.RData'))
@@ -221,9 +374,21 @@ source('../scripts/functions.R')
     ## ---- glimpse rainfall_fin
     glimpse(rainfall_fin)
     ## ----end
+    ## ---- glimpse-like rainfall_fin
+    glimpse_like_table(dat = sea_level_fin) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied annual total rainfall data (per financial year).")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-rainfallfin")
+                 )
+    ## ----end
 
     ## ---- save rainfall_fin
-    saveRDS(rainfall_fin, paste0(DATA_PATH, '/primary/rainfall_fin.RData'))
+    saveRDS(rainfall_fin, paste0(DATA_PATH, '/primary/rainfallfin.RData'))
     ## ----end
 }
 
@@ -237,6 +402,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse rainfall_anom
     glimpse(rainfall_anom)
+    ## ----end
+    ## ---- glimpse-like rainfall_anom
+    glimpse_like_table(dat = rainfall_anom) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied annual total rainfall anomaly data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-rainfallanom")
+                 )
     ## ----end
 
     ## ---- save rainfall_anom
@@ -255,13 +432,25 @@ source('../scripts/functions.R')
     ## ---- glimpse temp
     glimpse(temp)
     ## ----end
+    ## ---- glimpse-like temp
+    glimpse_like_table(dat = temp) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied mean annual air temperature data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-temp")
+                 )
+    ## ----end
 
     ## ---- save temp
     saveRDS(temp, paste0(DATA_PATH, '/primary/temp.RData'))
     ## ----end
 }
 
-## Mean air temperature anomaly 
+## Max air temperature anomaly 
 {
     ## ---- get data temp_anom
     temp_anom <- read_excel(paste0(DATA_PATH, "/primary/TempRainfallAnomaly_13.12.2021.xlsx"),
@@ -271,6 +460,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse temp_anom
     glimpse(temp_anom)
+    ## ----end
+    ## ---- glimpse-like temp_anom
+    glimpse_like_table(dat = temp_anom) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied max annual air temperature anomaly data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-tempanom")
+                 )
     ## ----end
 
     ## ---- save temp_anom
@@ -289,6 +490,18 @@ source('../scripts/functions.R')
     ## ---- glimpse SOI_cal
     glimpse(SOI_cal)
     ## ----end
+    ## ---- glimpse-like SOI_cal
+    glimpse_like_table(dat = SOI_cal) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied annual southern oscillation index (SOI) data (calendar year).")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-SOIcal")
+                 )
+    ## ----end
 
     ## ---- save SOI_cal
     saveRDS(SOI_cal, paste0(DATA_PATH, '/primary/SOI_cal.RData'))
@@ -305,6 +518,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse SOI_fin
     glimpse(SOI_fin)
+    ## ----end
+    ## ---- glimpse-like SOI_fin
+    glimpse_like_table(dat = SOI_fin) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied annual southern oscillation index (SOI) data (financial year).")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-SOIfin")
+                 )
     ## ----end
 
     ## ---- save SOI_fin
@@ -323,6 +548,18 @@ source('../scripts/functions.R')
     ## ---- glimpse SST_anom
     glimpse(SST_anom)
     ## ----end
+    ## ---- glimpse-like SST_anom
+    glimpse_like_table(dat = SST_anom) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied annual sea surface temperature (SST) anomaly data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-SSTanom")
+                 )
+    ## ----end
 
     ## ---- save SST_anom
     saveRDS(SST_anom, paste0(DATA_PATH, '/primary/SST_anom.RData'))
@@ -339,6 +576,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse build
     glimpse(build)
+    ## ----end
+    ## ---- glimpse-like build
+    glimpse_like_table(dat = build) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied building activity data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-build")
+                 )
     ## ----end
 
     ## ---- save build
@@ -357,6 +606,18 @@ source('../scripts/functions.R')
 
     ## ---- glimpse ship
     glimpse(ship)
+    ## ----end
+    ## ---- glimpse-like ship
+    glimpse_like_table(dat = ship) %>%
+      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+      set_caption(
+        as_paragraph(
+          as_chunk("Overview of the supplied ship counts data.")
+         ),
+        word_stylename = "Table Caption",
+        autonum = run_autonum(seq_id = "tab",
+                              bkm = "dataSource-ship")
+                 )
     ## ----end
 
     ## ---- save ship

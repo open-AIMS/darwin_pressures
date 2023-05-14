@@ -122,6 +122,13 @@ RUN R -e "options(repos = \
   install.packages('gridGraphics'); \ 
   install.packages('kableExtra'); \ 
 " 
+
+RUN R -e "options(repos = \
+    list(CRAN = 'http://mran.revolutionanalytics.com/snapshot/2022-10-04/'));\
+  install.packages('officer'); \ 
+  install.packages('officedown'); \ 
+" 
+
 ## Create project directory in docker image 
 RUN mkdir /home/Project
 

@@ -1,0 +1,744 @@
+---
+title: Darwin Harbour Water Quality Pressures 
+author: "Murray Logan"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  officedown::rdocx_document:
+    reference_docx: resources/ECM_1694746_v2_ReportingTemplate_2019.docx
+    fig_caption: yes
+    fig_height: 4
+    fig_width: 4
+    highlight: tango
+    toc: yes
+    toc_depth: 2
+    number_sections: no
+    tables:
+      style: Table Grid
+      layout: autofit
+      width: 1.0
+      caption:
+        style: Table Caption
+        pre: 'Tables '
+        sep: ': '
+        tnd: 0
+    plot:
+      caption:
+        style: Image Caption
+        tnd: 0
+    reference_num: true
+    page_margins:
+      bottom: 1
+      top: 1
+      left: 1
+      right: 1
+      header: 0.49
+      footer: 0.49
+      gutter: 0
+    page_size:
+      width: 8.3
+      height: 11.7
+      orient: 'portrait'
+  bookdown::word_document2:
+    reference_docx: resources/ECM_1694746_v2_ReportingTemplate_2019.docx
+    fig_caption: yes
+    fig_height: 4
+    fig_width: 4
+    highlight: tango
+    toc: yes
+    toc_depth: 2
+    number_sections: no
+    tables:
+      style: Style1-Emphasize1
+      layout: autofit
+    page_margins:
+      bottom: 1
+      top: 1
+      left: 1
+      right: 1
+      header: 0.49
+      footer: 0.49
+      gutter: 0
+    page_size:
+      width: 8.3
+      height: 11.7
+      orient: 'portrait'
+  word_document:
+    fig_caption: yes
+    fig_height: 4
+    fig_width: 4
+    highlight: tango
+    toc: yes
+    toc_depth: 2
+  page_size:
+    width: 8.3
+    height: 11.7
+    orient: 'portrait'
+
+bibliography: resources/references.bib
+output_dir: "docs"
+documentclass: article
+fontsize: 12pt
+mainfont: Arial
+mathfont: LiberationMono
+monofont: DejaVu Sans Mono
+classoption: a4paper
+---
+
+<w:updateFields w:val="true"/>
+
+```{r setup, include=FALSE, warnings=FALSE, message=FALSE}
+assignInNamespace('.sep.label',  "^\\ *(#|--)+\\s*(@knitr|----+)(.*?)-*\\s*$", ns='knitr')
+
+tidyverse_style_with_comments_removed <- function() {
+  remove_comments <- function(pd) {
+    is_comment <- pd$token == "COMMENT"
+    pd <- pd[!is_comment,]
+    pd
+  }
+  tidyverse_with_comments_removed <- styler::tidyverse_style()
+  tidyverse_with_comments_removed$token$remove_comments <- remove_comments
+  tidyverse_with_comments_removed
+}
+
+knitr::opts_chunk$set(message=FALSE, warning=FALSE,cache.lazy = FALSE, tidy='styler', echo = FALSE,
+                      tidy.opts=list(transformers = tidyverse_style_with_comments_removed()))
+## knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+
+# save the built-in output hook
+hook_output <- knitr::knit_hooks$get("output")
+
+# set a new output hook to truncate text output
+knitr::knit_hooks$set(output = function(x, options) {
+  if (!is.null(n <- options$out.lines)) {
+    x <- xfun::split_lines(x)
+    if (length(x) > n) {
+      # truncate the output
+      x <- c(head(x, n), "....\n")
+    }
+    x <- paste(x, collapse = "\n")
+  }
+  hook_output(x, options)
+})
+library(officedown)
+library(tidyverse)
+library(officer)
+library(rmarkdown)
+library(knitr)
+library(flextable)
+library(skimr)
+
+options(tinytex.engine = 'xelatex')
+knitr::read_chunk('../scripts/functions.R')
+knitr::read_chunk('../scripts/00_main.R')
+knitr::read_chunk('../scripts/10_get_data.R')
+knitr::read_chunk('../scripts/20_process_data.R')
+knitr::read_chunk('../scripts/30_EDA.R')
+knitr::read_chunk('../scripts/50_summaries_trees.R')
+
+source('../scripts/functions.R')
+PROCESS_TABLES <- FALSE
+INCLUDE_FIGURES <- FALSE
+INCLUDE_DIAGNOSTICS <- FALSE
+PERFORM_ASSOC <- FALSE
+PERFORM_TREES <- TRUE
+
+```
+
+**List of tables**
+
+<!---BLOCK_TOC{seq_id: "tab"}--->
+
+**List of figures**
+
+<!---BLOCK_TOC{seq_id: "fig"}--->
+ 
+
+
+# Background
+The pressure monitoring sub-program within the Integrated Marine
+Monitoring and Research Program (IMMRP) collates data on various
+pressures of perceived relevance to Darwin Harbour. An objective of
+the IMMRP pressure monitoring sub-program is to, where possible,
+explore relationships between pressures (and drivers) and stressor and
+response variables to understand key influences on marine condition,
+and to incorporate ‘multiple lines of evidence’ into condition
+assessments.
+
+
+# Project Scope
+This project comprises an exploratory statistical investigation of
+pressure - stressor relationships utilising the water quality data
+underpinning the Darwin Harbour (Water Quality) Report Card as a first
+step toward attribution. The driving question behind the study is what
+if any of the myriad of pressures show relationships.
+
+
+# Import data
+
+All of the data were provided via email from Lynda Radke (Wed
+30/09/2022 13:24, Tue 10/01/2023 08:39 and Tue 10/01/2023 08:58) or
+Julia Fortune (Tue 26/09/2022 12:32)
+
+The following sub-sections each correspond to particular sets of
+provided data.  In each of these sub-sections, I provide the code for
+importing the data into R along with a glimpse of the raw data.
+
+
+## Water quality data
+
+Summaries of the data supplied water quality data are supplied in tables
+\@ref(tab:dataSource-2015), \@ref(tab:dataSource-2022) and
+\@ref(tab:dataSource-2018) within the following sections.
+
+```{r get data WQ, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+\pagebreak
+
+### 2012 - 2015
+
+```{r get data WQ 2012_2015, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like WQ 2012_2015, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+\pagebreak
+
+### 2016 - 2022
+
+```{r get data WQ 2016_2022, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like WQ 2016_2022, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+\pagebreak
+### 2018 alterations
+
+The original water quality data for the year 2018 contained a very large number
+of samples collected via an via a continuous flow system with insufficient
+encoding to permit separation from more routine and discrete samples. Hence, a
+modified version of the water quality data were provided for the year 2018 to
+replace those within the 2016-2022 data.
+
+To assist with distinguishing _routine_ and _discrete_ samples, a lookup of
+routine sites was provided - a summary of which is contained in table
+\@ref(tab:dataSource-routine).
+
+```{r get data WQ 2018 alterations, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like WQ 2018 alterations, results='markdown', eval=TRUE, cache = TRUE}
+```
+ 
+```{r get data Routine sites, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like WQ Routine sites, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Primary point data
+
+Julia Fortune provided a word file containing point-source TN, TP, TSS and VSS
+loads to the Harbour at various scales from 2011-12 to 2020-21. An excel sheet
+was also provided of the underlying data - a summary of which is contained in
+table \@ref(tab:dataSource-primary).
+
+```{r get data PRIMARY, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like PRIMARY, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Estimated resident population (ERP) and gross regional product (GRP) 
+
+Table \@ref(tab:dataSource-primary) provides a summary of the estimated resident
+population (ERP) and gross regional product (grp) data provided for the years
+spanning 2000-01 to 2021-21.
+
+```{r get data ERP, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like ERP, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Catchment ERP
+
+Table \@ref(tab:dataSource-catchmentERP) provides a summary of the population
+density data for 2016 to 2020 (year ending June 30), including for sub-catchment
+areas.
+
+```{r get data catchmentERP, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like catchmentERP, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Fire frequency
+
+Table \@ref(tab:dataSource-firefreq) provides a summary of the fire frequencies
+for five year windows from 2000-04 until 2017-21 and then 2018-22. The data are
+based on weighted averages (WA) for the individual sub-catchments and the
+overall catchment area. Standard deviations (SDs) are also provided.
+
+```{r get data fire_freq, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like fire_freq, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Fire areas
+
+Table \@ref(tab:dataSource-fireareas) and Table \@ref(tab:dataSource-fireareasp)
+provide summaries of the fire scar areas as km² and percentages respectively of
+the total catchment areas from 2000 to 2021. The data are also broken down
+according to whether or not they formed in early dry-season and late dry-season.
+Totals comprise early+late fire scars.
+
+### Areas
+
+```{r get data fire_areas, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like fire_areas, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### Percentages
+
+```{r get data fire_areas_p, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like fire_areas_p, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Sea level rise 
+
+Table \@ref(tab:dataSource-sealevelcal) and Table \@ref(tab:dataSource-sealevelfin)
+provide summaries of BOM monthly sea levels and annual averages of the mean
+monthly sea levels for calendar and financial years respectively.
+
+### Calendar year
+
+```{r get data sea_level_cal, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like sea_level_cal, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### Financial year
+
+```{r get data sea_level_fin, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like sea_level_fin, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Temperature/Rainfall/Anomaly
+
+The tables in this section provide summaries of a range of climatic data sets,
+including:
+
+- Annual total rainfall at Darwin airport (calendar) – 1902-2021 (Table \@ref(tab:dataSource-rainfallcal))
+- Monthly rainfall at Darwin airport– 1989 -2022 (Table \@ref(tab:dataSource-rainfallfin))
+- Annual rainfall (financial year) – 1989-90 – 2021-22 (Table \@ref(tab:dataSource-rainfallcal))
+- Rainfall anomaly – 1902-2021 (Table \@ref(tab:dataSource-rainfallanom))
+- Mean air temperature – 1910-2020 (Table \@ref(tab:dataSource-temp))
+- Maximum air temperature – 1910 – 2020 (Table \@ref(tab:dataSource-temp))
+- Mean temperature anomaly – 1910 – 2020 (Table \@ref(tab:dataSource-tempanom))
+- Maximum temperature anomaly – 1910-2020 (Table \@ref(tab:dataSource-tempanom))
+- Annual averages of monthly SOI for financial years and calendar (Tables \@ref(tab:dataSource-SOIcal) and  \@ref(tab:dataSource-SOIfin))
+  years
+- Sea surface temperature (SST) anomaly – 1900 – 2021 (Tables \@ref(tab:dataSource-SSTanom))
+
+Most of the data are from Darwin airport or gauging station.
+
+You should definitely include annual rainfall and SOI data in your
+analyses. Rainfall anomalies and SSTs may also be interesting.
+
+### Annual rainfall (calendar year)
+
+```{r get data rainfall_cal, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like rainfall_cal, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### Annual rainfall (financial year)
+
+```{r get data rainfall_fin, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like rainfall_fin, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### Rainfall anomaly
+
+```{r get data rainfall_anom, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like rainfall_anom, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### Mean air temperature 
+
+```{r get data temp, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like temp, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### Max air temperature anomaly 
+
+```{r get data temp_anom, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like temp_anom, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### SOI (cal year)
+
+```{r get data SOI_cal, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+```{r glimpse-like SOI_cal, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### SOI (fin year)
+
+```{r get data SOI_fin, results='markdown', eval=TRUE, cache = TRUE}
+```
+```{r glimpse-like SOI_fin, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### SST anomaly
+
+```{r get data SST_anom, results='markdown', eval=TRUE, cache = TRUE}
+```
+```{r glimpse-like SST_anom, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Building activity
+
+Table \@ref(tab:dataSource-build) provide summaries of the supplied data on
+annual costs of total, engineering, residential and non-residential building
+activity from 1987-88 to 2021-22.
+
+```{r get data build, results='markdown', eval=TRUE, cache = TRUE}
+```
+```{r glimpse-like build, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+## Ship counts
+
+Table \@ref(tab:dataSource-ship) provide summaries of the supplied data on
+various trade ship counts from Darwin Port from 2011-11 to 2021-22.
+
+### Get data
+```{r get data ship, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+### Glimpse data
+
+```{r glimpse-like ship, results='markdown', eval=TRUE, cache = TRUE}
+```
+
+# Lookup tables
+
+Although each of the data collections provide a (spatio) temporal
+series, they are not all on the same spatial and temporal scales.
+Furthermore, whilst the stressor indicators (water quality samples)
+are collected within the Darwin Harbour water bodies, most (if not
+all) of the pressures are measured from the adjoining sub-catchments
+or else were recorded at the scale of the entire harbour.
+
+To be able to relate stressors to pressures, it is necessary to
+combine the multiple data sources together which in turn necessitates
+finding common scales (both temporal and spatial) in which all
+datasets can be projected.
+
+Since many of the provided pressures are on a annual financial year
+scale, this scale is used as the common temporal scale across all data
+sets.  For the spatial scale, Darwin Harbour Zones are used as these
+are the major spatial unit for the Darwin Harbour Water Quality Report
+Card.
+
+The following sub-sections provide a series of lookup tables that are
+used to map variables from each data set to the common spatial scales,
+provide reporting units and provide some analysis settings.
+
+## Measures lookup
+
+Table \@ref(tab:lookup-measures) provides a mapping between the original
+pressure/stressor names (`Var`) and more convenient (shorter) working versions
+(`Measure`) from each `Dataset`. There are also some additional data managment
+settings associated with each data type.
+
+```{r get data var_lookup, results='markdown', eval=TRUE, cache = TRUE}
+```
+```{r measures lookup, results='markdown', eval=TRUE, cache = TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/var_lookup.RData")) %>%
+  mutate(Var = str_replace_all(Var,"\\$","\\\\$")) %>%
+  dplyr::select(-ID, -SITE_ID, -Scale) %>% 
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  ##flextable::align(j = c(3,4), align = "right") %>%
+  padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+  set_caption(
+    as_paragraph(
+      as_chunk("Spatial lookup for stressors across all data sets.")
+    ),
+    word_stylename = "Table Caption",
+    autonum = run_autonum(seq_id = "tab",
+                          bkm = "lookup-measures")
+  )
+```
+
+## Units lookup
+
+Table \@ref(tab:lookup-units) defines the units (and thus figure/table labels) for each
+of the pressure/stressors.
+
+```{r get data units_lookup, results='markdown', eval=TRUE}
+```
+```{r units lookup, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/units_lookup.RData")) %>%
+ mutate(Units = str_replace_all(Units,"\\$","\\\\$"),
+        TableLabel = str_replace_all(TableLabel,"\\$","\\\\$"),
+		FigureLabel = str_replace_all(FigureLabel,"\\$","\\\\$")) %>% 
+  dplyr::select(-Trans, -FigureLabel) %>% 
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  ##flextable::align(j = c(3,4), align = "right") %>%
+  padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+  set_caption(
+    as_paragraph(
+      as_chunk("Units lookup for stressors across all data sets.")
+    ),
+    word_stylename = "Table Caption",
+    autonum = run_autonum(seq_id = "tab",
+                          bkm = "lookup-units")
+  )
+```
+
+## Spatial lookup
+
+Table \@ref(tab:lookup-spatial) defines the Darwin Harbour Water Zone hierarchy.
+
+```{r get data spatial_lookup, results='markdown', eval=TRUE}
+```
+```{r spatial lookup, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup.RData")) %>%
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  ##flextable::align(j = c(3,4), align = "right") %>%
+  padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+  set_caption(
+    as_paragraph(
+      as_chunk("Darwin Harbour water zone hierachy.")
+    ),
+    word_stylename = "Table Caption",
+    autonum = run_autonum(seq_id = "tab",
+                          bkm = "lookup-spatial")
+  )
+```
+
+## Spatial sub-catchments lookup
+
+Table \@ref(tab:lookup-spatialcatch) defines the Darwin Harbour sub-catchments and maps these
+to Darwin Harbour Water Zones.  There are also additional settings
+that can be used in the preparation of maps. Note, the spelling of
+`Michett Creek` and `Leichhardt Creek`.  This is the spelling provided
+in the Darwin Harbour shapefiles, however the spellings are different
+in the various excel spreadsheets.  I have opted to honour the
+spellings in the shapefiles.
+
+```{r get data spatial_subcatchments_lookup, results='markdown', eval=TRUE}
+```
+```{r spatial subcatchments lookup, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_subcatchments_lookup.RData")) %>%
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  ##flextable::align(j = c(3,4), align = "right") %>%
+  padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+  set_caption(
+    as_paragraph(
+      as_chunk("Darwin Harbour water sub-catchments hierachy.")
+    ),
+    word_stylename = "Table Caption",
+    autonum = run_autonum(seq_id = "tab",
+                          bkm = "lookup-spatialcatch")
+  )
+```
+
+
+## Primary point spatial lookup
+
+Table \@ref(tab:lookup-primary) provides settings that can be used in the preparation of
+maps for the primary point data.
+
+```{r get data spatial_lookup_primary, results='markdown', eval=TRUE}
+```
+```{r spatial lookup primary, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_primary.RData")) %>%
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  ##flextable::align(j = c(3,4), align = "right") %>%
+  padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+  set_caption(
+    as_paragraph(
+      as_chunk("Spatial metadata for the primary point source data.")
+    ),
+    word_stylename = "Table Caption",
+    autonum = run_autonum(seq_id = "tab",
+                          bkm = "lookup-primary")
+  )
+
+```
+
+## Catchment ERP spatial lookup
+
+Table \@ref(tab:lookup-catchmenterp) provides a mapping between the catchment names supplied in
+the `Catchment ERP` data and the standardised names used across all
+datasets. Note, the spelling of `Michett Creek` and `Leichhardt
+Creek`.
+
+```{r get data spatial_lookup_catchment_erp, results='markdown', eval=TRUE}
+```
+```{r spatial lookup catchment_erp, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_catchment_erp.RData")) %>%
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  ##flextable::align(j = c(3,4), align = "right") %>%
+  padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+  set_caption(
+    as_paragraph(
+      as_chunk("Naming lookup for catchment ERP data.")
+    ),
+    word_stylename = "Table Caption",
+    autonum = run_autonum(seq_id = "tab",
+                          bkm = "lookup-catchementerp")
+  )
+```
+
+## Fire frequency spatial lookup
+
+Table \@ref(tab:lookup-fire) provides a mapping between the catchment names supplied in
+the `FireFreq` data and the standardised names used across all
+datasets.  Note, the spelling of `Michett Creek` and `Leichhardt
+Creek`.
+
+```{r get data spatial_lookup_fire, results='markdown', eval=TRUE}
+```
+```{r spatial lookup fire, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_fire.RData")) %>%
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  ##flextable::align(j = c(3,4), align = "right") %>%
+  padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+  set_caption(
+    as_paragraph(
+      as_chunk("Naming lookup for fire frequency data.")
+    ),
+    word_stylename = "Table Caption",
+    autonum = run_autonum(seq_id = "tab",
+                          bkm = "lookup-fire")
+  )
+```
+
+## Fire areas spatial lookup
+
+Table \@ref(tab:lookup-fireareas) provides a mapping between the catchment names supplied in
+the `FireAreas` data and the standardised names used across all
+datasets.  Note, the spelling of `Michett Creek` and `Leichhardt
+Creek`.
+
+```{r get data spatial_lookup_fire_areas, results='markdown', eval=TRUE}
+```
+```{r spatial lookup fire areas, results='markdown', eval=TRUE}
+readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_fire_areas.RData")) %>%
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  ##flextable::align(j = c(3,4), align = "right") %>%
+  padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
+  set_caption(
+    as_paragraph(
+      as_chunk("Naming lookup for fire frequency areas data.")
+    ),
+    word_stylename = "Table Caption",
+    autonum = run_autonum(seq_id = "tab",
+                          bkm = "lookup-fireareas")
+  )
+```
+
+# Process data
+
+## Spatial data
+
+
+### Darwin Harbour
+
+```{r Darwin-harbour, results='markdown', eval=TRUE, fig.show='hold',fig.align='center', out.width = "100%", fig.cap = "Map of Darwin Harbour illustrating the zones."}
+include_graphics("../output/figures/map_spatial_subcatchments_combined.png",
+                 dpi = 300)
+```
+
+### Darwin Harbour sub-catchments
+
+```{r Darwin-harbour-subcatchments, results='markdown', eval=TRUE, out.width = "100%", fig.cap = "Map of Darwin Harbour illustrating the sub-catchments."}
+include_graphics("../output/figures/map_spatial_subcatchments.png", dpi = 300)
+```
+
+
+
+
+
+![](../output/figures/design_wq_2018.png){#fig-Tree-discrete} ::::
+
+
+
+
+::: {.content-visible when-format="html"}
+
+# About this document
+
+The current standalone (self-contained) HTML document is generated via
+https://quarto.org/ and all R codes used in the underlying analyses
+are embeded herein (albeit behind 'show the code' reveal markers).
+
+```{r loadPackages, warnings=FALSE, message=FALSE, results='hide', echo = FALSE}
+```
+
+<details><summary>View a summary of the R environment used at the time
+of the production of this document.</summary>
+
+```{r sessionInfo, echo = FALSE, warnings=FALSE, message=FALSE}
+sessionInfo()
+```
+</details>
+
+:::

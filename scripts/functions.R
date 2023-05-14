@@ -14,6 +14,10 @@ library(doParallel)
 library(furrr)
 library(kableExtra)
 library(gbm)
+library(skimr)
+library(flextable)
+library(officedown)
+library(skimr)
 sf_use_s2(FALSE)
 ## ----end
 
@@ -1793,3 +1797,40 @@ cohenDColours <- function(x) {
         x >= 2 ~   "#488f31",  #Huge
         )
     }
+
+
+glimpse_like_table <- function(dat) {
+  my_skim <- skim_with(character = sfl(Values = ~ str_trunc(paste(unique(.), collapse = ','),30),
+                                       Min = ~ "",#as.character(.[1]),
+                                       Max = ~ ""),#as.character(.[1])),
+                       numeric = sfl(Values = ~ inline_hist(.),
+                                     Min = ~ sprintf("%.3f", min(., na.rm = TRUE)),
+                                     Max = ~ sprintf("%.3f", max(., na.rm = TRUE))),
+                       POSIXct = sfl(Values = ~ inline_hist(as.numeric(.)),
+                                     Min = ~ format(min(., na.rm = TRUE), "%Y-%m-%d"),
+                                     Max = ~ format(max(., na.rm = TRUE), "%Y-%m-%d")),
+                       logical = sfl(Values = ~ skimr::top_counts(.))
+                       )
+
+  dat %>%
+    my_skim() %>%
+    focus(Missing = n_missing, any_of(c("character.Min", "character.Max", "character.Values",
+                                        "numeric.Values", "numeric.Min", "numeric.Max",
+                                        "POSIXct.Values", "POSIXct.Min", "POSIXct.Max",
+                                        "logical.Values"))) %>%
+    ## yank("character") %>%
+    as_tibble() %>%
+    mutate(Values = coalesce(!!!select(., ends_with(".Values"))),
+           Min = coalesce(!!!select(., ends_with(".Min"))),
+           Max = coalesce(!!!select(., ends_with(".Max")))
+           ) %>%
+
+  dplyr::select(Variable = skim_variable, Type = skim_type, Min, Max, everything(),
+                -ends_with(".Min"), -ends_with(".Max"), -ends_with(".Values")) %>%
+  flextable::flextable() %>%
+  flextable::fontsize(size = 9, part = "all") %>%
+  flextable::line_spacing(space = 0.1) %>%
+  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::autofit() %>%
+  flextable::align(j = c(3,4), align = "right")
+}

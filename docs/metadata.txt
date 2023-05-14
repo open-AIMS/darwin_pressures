@@ -1,0 +1,6 @@
+TITLE = An exploration of the associations between pressures and stressors in Darwin Harbour water quality parameters
+<subtitle> =
+<AUTHORS> = Murray Logan
+<PREPFOR> = Northern Territory Government, Department of Environment, Parks and Water Security
+<authors> = Logan, M
+<YEAR> = 2023
