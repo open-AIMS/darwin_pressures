@@ -6,8 +6,6 @@ output:
   officedown::rdocx_document:
     reference_docx: resources/ECM_1694746_v2_ReportingTemplate_2019.docx
     fig_caption: yes
-    fig_height: 4
-    fig_width: 4
     highlight: tango
     toc: yes
     toc_depth: 2
@@ -702,26 +700,2050 @@ readRDS(file = paste0(DATA_PATH, "processed/spatial_lookup_fire_areas.RData")) %
 
 ### Darwin Harbour
 
-```{r Darwin-harbour, results='markdown', eval=TRUE, fig.show='hold',fig.align='center', out.width = "100%", fig.cap = "Map of Darwin Harbour illustrating the zones."}
-include_graphics("../output/figures/map_spatial_subcatchments_combined.png",
-                 dpi = 300)
+```{r Darwin-harbour, results='markdown', eval=TRUE, fig.show='hold',fig.align='center', fig.width = 6, fig.asp = 7/8, fig.cap = "Map of Darwin Harbour illustrating the zones."}
+include_graphics("../output/figures/map_spatial.png", dpi = 300)
 ```
-
+ 
 ### Darwin Harbour sub-catchments
 
-```{r Darwin-harbour-subcatchments, results='markdown', eval=TRUE, out.width = "100%", fig.cap = "Map of Darwin Harbour illustrating the sub-catchments."}
+```{r Darwin-harbour-subcatchments, results='markdown', eval=TRUE, fig.width = 6, fig.asp = 7/8, out.width = 7, out.height = 8, fig.cap = "Map of Darwin Harbour illustrating the sub-catchments."}
 include_graphics("../output/figures/map_spatial_subcatchments.png", dpi = 300)
 ```
 
+## Water Quality
+
+### 2012-2015
+
+After ingesting the supplied data, the following processing steps were
+applied in order to facilitate further analyses:
+
+- standardise field names to be consistent with 2016-2022 data set
+- only retain response variables that are common to both 2012-2015 and
+  2015-2022 data sets
+- provide short names for response variables
+- format date
+- add spatial context
+
+Figure \@ref(fig:Design-2012) provides a graphical overview of the
+spatio-temporal design of the 2012-2015 water quality data and figure \@ref(fig:wq-Spatial-2012) illustrates the spatial sampling configuration during this sampling period.
+
+<!---BLOCK_LANDSCAPE_START--->
+
+```{r Design-2012}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.4167
+#| fig.cap: "Broad spatio-temporal design of the observed water quality data.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_wq_2012.png", dpi = 300)
+```
+ 
+<!---BLOCK_LANDSCAPE_STOP--->
+
+```{r wq-Spatial-2012}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.6975
+#| fig.cap: "Spatial distribution of water quality sampling locations between 2012-2015."
+
+include_graphics("../output/figures/map_wq__2012_2015.png", dpi = 300)
+```
+ 
+
+### 2016-2022
+
+The 2016-2022 data contain both `Discrete` and `CFM` (Continuous Flow
+Management) data.  I am not sure that I understand the distinction.
+Initially I thought that `Discrete` data were collected via
+individual, manual grab samples at specific locations repeatedly on an
+annual schedule.  However, given the very large number of Discrete
+samples in 2018, it is unlikely that this description is completely
+accurate.
+
+Whilst the relatively small number of discrete sampling locations does
+mean that the estimates are biased towards the sampling locations
+(that is, they are not necessarily fully representative of the entire
+Zone from which they are collected), this design does make it easier
+to detect temporal trends (since the bias remains relatively constant
+over time) for a given sampling effort.
+
+By contrast, `CFM` data are collected via a system that draws water
+samples at regular intervals, analyses them and couples the with a GPS
+for geocoding. These data are not necessarily replicated over time and
+thus, whilst potentially more spatially representative, if not
+replicated annually, the biases in estimates will fluctuate and
+potentially mask temporal trends.
+
+Since the purpose of this study is to relate temporal trends in the
+pressures and stressors, it is more appropriate to work primarily with
+the discrete data.
+
+<!--
+Issues:
+
+- there are a large number of records without Latitude/Longitude.
+  These are all `CFM` values.  I could either exclude them, or else
+  give them Lat/Longs
+- concernedly, there are 54 records in which the Latitude and
+  Longitude values are clearly swapped around.  These all occur in the
+  2017 data.
+- in the 2016 data, there are some `CFM` records that have
+  Latitude/Longitude values of "too_big" and thus NA - I will exclude
+  these
+- in the 2018 data, there are a large number of `Discrete` records
+  that seem to be `CFM` (they appear in transects).  This is going to
+  make it difficult to filter out all the `CFM` data.
+- there are a few examples in which the spatial hierarchy seems to
+  break down.  That is, there are Zones in Regions they should not be
+  in.  E.g. Zone 1 (Outer Harbour) should be in the "Outer" Region.
+  However, there are records in the input data in which there are Zone
+  1, "Inner" Region. 
+-->
+
+To ready these data for analyses, the following processing steps were
+performed:
+
+- attempt to correct the Latitude values that are stored as longitudes
+  and vice verse.
+- attempt to recode and "Discrete" `Source` values that have "CFM"
+  `SAMPTYPE` as "Discrete"
+- format date
+- pivot longer according to the focal response variables
+- provide short names for response variables
+- to prevent issues of joining based on the spatial hierarchy
+  inconsistencies (with Region), I will remove the `Region` field
+  prior to join.
+- provide spatial context
+
+Figure \@ref(fig:wq-2016-design) is supposed to illustrate purely
+"Discrete" samples, however, it is clear that there are a large number
+of samples that are potentially continuous flow management (CFM)
+present in 2018.
+
+
+```{r wq-2016-design}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 6.5
+#| fig.cap: "Broad spatio-temporal design of the 2016-2022 observed water quality data.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_wq_2016.png", dpi = 300)
+```
+ 
+
+Similarly, figure \@ref(fig:wq-2016-spatial) shows the spatial
+configuration of sampling locations per year.
+
+```{r wq-2016-spatial}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 8.357
+#| fig.cap: "Spatio-temporal distribution of discrete sampling locations between 2016 and 2022."
+
+include_graphics("../output/figures/map_wq__2016_2022_large.png", dpi = 300)
+```
+
+Figure \@ref(fig:wq-2016-Spatial-all) summarises the location of 
+all samples, including the continuous flow management system (CFM) 
+samples.
+
+```{r wq-2016-spatial-all}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 7.42
+#| fig.cap: "Spatio-temporal distribution of all sampling locations between 2016 and 2022."
+
+include_graphics("../output/figures/map_wq__2016_2022_all_large.png", dpi = 300)
+```
+
+### 2018 alterations
+
+Figure \@ref(fig:wq-2018-design) illustrates the further curated data for 2018 
+that attempts to further distinguish the genuine discrete samples from other 
+samples that may have been collected for differently purposes.  These data are 
+processed (prepared) identically to the 2016-2022 data.  It is clear that these 
+'discrete' samples still do not always represent samples collected at discrete 
+(and repeatedly sampled) stations.
+ 
+```{r wq-2018-design}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 6.5
+#| fig.cap: "Broad spatio-temporal design of the observed 2018 water quality data.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_wq_2018_large.png", dpi = 300)
+```
+
+```{r wq-2018-spatial}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 4.64
+#| fig.cap: "Spatio-temporal distribution of discrete sampling locations in 2018."
+
+include_graphics("../output/figures/map_wq__2018_large.png", dpi = 300)
+```
+
+Figure \@ref(fig:wq-2018-Spatial-all) summarises the location of 
+all samples, including the continuous flow management system (CFM) 
+samples.
+
+```{r wq-2018-spatial-all}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 7.42
+#| fig.cap: "Spatio-temporal distribution of all sampling locations in 2018."
+
+include_graphics("../output/figures/map_wq__2018_all_large.png", dpi = 300)
+```
+
+### Routine sites
+
+To help identify samples that would be considered routine from those
+that are temporally unique (such as those collected via some sort of
+underway system, Julia Fortune has provided a list of the routine
+sites (along with there Lat/Longs).  These routine sampling locations 
+are featured in figure \@ref(fig:wq-routine-spatial).
+
+```{r wq-routine-spatial}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 8.357
+#| fig.cap: "Spatio-temporal distribution of routine sampling locations."
+
+include_graphics("../output/figures/map_wq__routine_sites_large.png", dpi = 300)
+```
+
+### Combine data
+
+Finally, each of the water quality data sets were combined to form a
+single data set spanning 2015 - 2022 and subsitituting in the
+alterative 2018 data.  Furthermore, additional spatial information
+(such as Area, Region and Zone Names) were also applied.
+
+Note, when pivoting, it was necessary to aggregate duplicates (means).
+There were instances in which there were multiple Values for the same
+response at the same time and location.  For example, there are two
+Chlorophyll-a values (11.570 and 9.780) sampled on 07/07/2014 at
+location (131.0372, -12.38608).  These records are on rows 80 and 2454
+of the original `2014.csv` input file.
+
+#### Routine sites
+
+Figures \@ref(fig:design-wq-routine) and \@ref(fig:map-wq-routine)
+illustrate the spatio-temporal design configuration of the routine
+water quality sampling sampling sites.
+
+```{r design-wq-routine}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Broad spatio-temporal design of the routine observed water quality data.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_wq_routine_large.png", dpi = 300)
+```
+
+```{r map-wq-routine}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 6.5
+#| fig.cap: "Spatio-temporal distribution of routine (and other) sampling locations between 2012 and 2022"
+
+include_graphics("../output/figures/map_wq_routine_large.png", dpi = 300)
+```
+
+
+#### Discrete samples
+
+Figures \@ref(fig:design-wq) and \@ref(fig:map-wq-discrete) illustrate
+the spatio-temporal design configuration of the discrete water quality
+sampling sampling sites.
+
+```{r design-wq}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Broad spatio-temporal design of the discrete observed water quality data.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_wq_large.png", dpi = 300)
+```
+
+```{r map-wq-discrete}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 6.5
+#| fig.cap: "Spatio-temporal distribution of discrete sampling locations between 2012 and 2022"
+
+include_graphics("../output/figures/map_wq_large.png", dpi = 300)
+```
+ 
+
+## Primary point data
+
+The following data processing steps were applied in order to prepare
+the primary point data for analyses:
+
+- correct spelling of `Site` of "Territory Generation DP1" to
+  "Territory Generation ADP1"
+- format date of year end
+- there are duplicate values (multiple values collected on same
+  date/site - these are all Waste Discharge Licence) - I will remove
+  this category as it is not really a Parameter
+- many of the fields in this dataset are superfluous or not fit for
+  the current purpose (some because the fields are inconsistent).  I
+  will remove all but `Site`, `Year`, `Load`, `Parameter`, `Latitude`
+  and `Longitude`.
+- use a lookup table to fill in lat/longs that are missing in the
+  data.  The lookup table has lat/longs supplied via email by Lynda.
+- provide spatial context (in the form of `Catchement` and `ZoneName`)
+  by joining these data to sub-catchment spatial data.
+- pivot wider so that `Parameters` are in new fields
+- rename parameters so that they are easier to work with
+- reorder the spatial data according to Catchment number
+
+Additional problems that were corrected:
+
+  - there is at least one instance where `Source of discharge` differs
+    for the same `Site`, `Fin Year`, `Year ref`, Lat/Long,
+    `Organisation` - how is this possible.  I am going to remove the
+    "Source of discharge" field as this inconsistency is problematic.
+  - `Financial year end` and `Year ref.` are not consistent with
+    `Financial year end` - see example rows 282:285 of `Primary Point
+    Source Dataset_22.xlsx`.  I am going to remove `Financial year
+    end`
+
+The spatio-temporal design of the primary point data are illustrated
+in figures \@ref(fig:design-primary) and \@ref(fig:map-primary)
+
+```{r design-primary}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.4
+#| fig.cap: "Broad spatio-temporal design of the observed primary point.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_primary_large.png", dpi = 300)
+```
+
+```{r map-primary}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 8.666
+#| fig.cap: "Spatial distribution of primary point sampling locations"
+
+include_graphics("../output/figures/map_primary_large.png", dpi = 300)
+```
+
+
+## Estimated resident population (ERP) and gross regional product (GRP) 
+
+These data required no data processing except for renaming the
+parameters to make them a little more easy to work with.  Furthermore,
+these data do not have any spatial context, and thus will be applied
+at the whole of harbour level.
+
+
+## Catchment ERP
+
+<!--
+Questions for Lynda:
+
+1. Should `MWA` be `Central Harbour` or `West Arm`, should they be
+   combined or should they be repeated so that the `ERP` and `Pop`
+   values effect both `West Arm` and `Central Harbour` water quality
+   values
+2. There are numerous apparent '-' in the excel sheet.  Some of these
+   (e.g. H6 are actually a '-'). Others, are exported as zero (0)
+   because they are right justified (e.g, D6-H6) and therefore
+   considered a negative rather than a nulll.  Should they be 0 or -?
+3. This results in 0 values for the population columns
+4. `Darwin CBD` is listed as `East Arm`, to be consistent, shouldn't
+   this be `Central Harbour`
+-->
+
+These data required the following data processing steps:
+
+- remove the row sums
+- replace `-` characters with NA
+- ensure that all variables that begin with a four digit year are considered numeric
+- pivot longer so that the main predictors are in a single column
+- remove any rows with Value of NA
+- separete the column into Year and Predictor
+- pivot wider according to Predictor
+- rename parameters so that they are easier to work with
+
+The spatio-temporal design of the catchment estimated resident
+population data are illustrated in figures
+\@ref(fig:design-catchmentERP).
+
+```{r design-catchmentERP}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.4
+#| fig.cap: "Broad spatio-temporal design of the observed catchment ERP data.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_catchment_erp_large.png", dpi = 300)
+```
+
+## Fire frequency
+
+Data issues:
+
+- There are two columns called "11-15 (WA)".  As a result, when
+    imported, numbers are appended. Based on the naming patterns of
+    the other columns, it is clear that the second of these "11-15
+    (WA)" columns should have been "11-15 (SD)". Fix this up 
+- There is also some inconsistency in the format of the column
+    names.  Most of them are of the format "YR1_YR2 (STAT)", however,
+    the final few columns are of the format "YR1_YR2 STAT" (that is,
+    no brackets) - fix this.
+
+These data were processing according to the following steps:
+
+- rename the errant columns
+- remove the Overall summation row
+- pivot the table longer such that each year is a separate row
+- the input data represent the weighted averages and standard
+  deviations over 5 year windows.  For these data to be useful in an
+  statistical analysis, we need to express this time range as a single
+  year.  I will take the last year of the range of years as the focal
+  Year.  The logic here is that the fire frequency has been
+  experienced over that 5 year period.
+- pivot wider to express both weighted average and standard deviation
+  versions as separate predictors
+
+The spatio-temporal design of the catchment estimated resident
+population data are illustrated in figures
+\@ref(fig:design-firefreq).
+
+```{r design-firefreq}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.4
+#| fig.cap: "Broad spatio-temporal design of the observed fire frequency data.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_fire_freq_large.png", dpi = 300)
+```
+
+## Fire areas
+
+### Areas
+
+These data (fire areas expressed in km²) were processed according
+to the following steps:
+
+- exclude the "Overall" row from the data
+- pivot the table longer such that each year is a separate row
+- apply a lookup to ensure consistent (standardised) Catchment naming
+- add spatial context (`ZoneName`)
+- ensure that year is a numeric variable
+
+### Percentages
+
+These data (fire areas expressed in percentages) were processed
+according to the following steps:
+
+- exclude the "Whole catchment area" row from the data
+- pivot the table longer such that each year is a separate row
+- perform some direct replacements to ensure consistent (standardised)
+  Catchment naming
+- add spatial context (`ZoneName`)
+- ensure that year is a numeric variable
+	
+### Combined
+
+The fire areas were then combined into a single data set, the
+spatio-temporal configuration of which is illustrated in figure
+\@ref(fig:design-fire-areas).
+
+```{r design-fire-areas}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.4
+#| fig.cap: "Broad spatio-temporal design of the observed fire frequency areas data.  Solid dots indicate the presence of data."
+
+include_graphics("../output/figures/design_fire_areas_large.png", dpi = 300)
+```
+
+## Sea levels 
+
+These data were processed according to the following steps:
+
+- rename the columns for easier use according to a lookup
+- remove the `Financial year` field
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
+
+
+## Temperature/Rainfall/Anomaly
+
+### Annual rainfall (fin year)
+
+These data were processed according to the following steps:
+
+- rename the columns for easier use according to a lookup
+- remove the `Financial year` field
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
+
+### Rainfall anomaly
+
+These data were processed according to the following steps:
+
+- rename the columns for easier use according to a lookup
+- remove the `Financial year` field
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
+
+
+### Air temperature
+
+These data were processed according to the following steps:
+
+- rename `Date` to `Year`
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
+
+### Air temperature anomaly
+
+These data were processed according to the following steps:
+
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
+
+
+## Southern Oscillation Index (SOI)
+
+These data were processed according to the following steps:
+
+- rename the columns for easier use according to a lookup
+- reformat `Year` into a standard format
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
+
+## Sea Surface Temperature (SST) anomaly
+
+These data were processed according to the following steps:
+
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
+
+## Building activity
+
+These data were processed according to the following steps:
+
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
+
+## Shipping activity
+
+These data were processed according to the following steps:
+
+- rename the columns for easier use according to a lookup
+- remove superfluous fields
+
+There is no spatial component to these data and thus the associated
+covariates will be similarity applied at all spatial scales.
 
 
 
+## Combine all data
 
-![](../output/figures/design_wq_2018.png){#fig-Tree-discrete} ::::
+In combining together the responses/stresses along with the pressures,
+it is important to recognise that they are collected on different
+spatial and temporal scales.  Hence, to combine all the sources
+together, we need to do so via common spatial and temporal scales.
+
+For temporal scales, it is simple enough to base this on the financial
+year since most of the data are already expressed this way, or else
+the conversions are simple enough.  However, the spatial scales are
+more difficult, particularly considering that the water quality data
+(stresses) are collected in water and the pressures are predominantly
+collected terrestrially. The only real way to address this is to be
+able to associate each of the _Sub-catchments_ to a single harbour
+_Zone_.
+
+Consequently, all analyses will be conducted on the Zone/Year scale
+(in addition to a whole harbour/Year scale).  There are many instances
+(both stresses and pressures) in which there are multiple observations
+collected per Zone/Year. As a result, when the multiple sources are
+combined together, the number of data set rows will increase
+dramatically.  For example, a given water quality observation might
+appear multiple times, once for each pressure observation at that
+Zone/Year scale.
+
+This duplication is not necessarily an issue, however, we need to be
+mindful of it so as to prevent it from artificially over or under
+weighting some effects and some observations.  To help with this,
+unique record identifiers were added to the water quality components.
+
+The alternative is to aggregate all data to the Zone/Year level such
+that there are no more than one observation (per stress and
+predictor) per Zone/Year. Although this would simplify things, it has
+the potential to loose vast quantities of information.
 
 
+# Exploratory data analyses
+
+Prior to fitting any statistical models, it is prudent to first
+explore the distributions and temporal patterns in each of the
+stressors (responses) and pressures (covariates).
+
+## Pressures (Covariates) 
+
+### Total N (t)
+
+```{r EDA-pressures-TotalN}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Total N (t) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_TotalN_large.png", dpi = 300)
+```
+
+### Total P (t)
+
+```{r EDA-pressures-TotalP}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Total P (t) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_TotalP_large.png", dpi = 300)
+```
+
+### Discharge volume (annual kL)
+
+```{r EDA-pressures-Discharge}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Discharge volume (annual kL) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Discharge_large.png", dpi = 300)
+```
+
+### Total suspended solids (t)
+
+```{r EDA-pressures-TSS}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 3.9
+#| fig.cap: "Temporal trends in Total suspended solids (t) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_TSS_large.png", dpi = 300)
+```
+
+### Volatile suspended solids (t)
+
+```{r EDA-pressures-VSS}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 2.6
+#| fig.cap: "Temporal trends in Volatile suspended solids (t) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_VSS_large.png", dpi = 300)
+```
+
+### Estimated resident population
+
+```{r EDA-pressures-ERP}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Estimated Resident Population (ERP) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_ERP_large.png", dpi = 300)
+```
+
+### Estimated resident population growth
+
+```{r EDA-pressures-ERP-growth}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Estimated Resident Population (ERP) growth within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_ERP_growth_large.png", dpi = 300)
+```
+
+### Gross regional product ($M)
+
+```{r EDA-pressures-GRP}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Gross regional product ($M) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_GRP_large.png", dpi = 300)
+```
+
+### Gross regional product change (%)
+
+```{r EDA-pressures-GRP_change}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Gross regional product change (%) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_GRP_change_large.png", dpi = 300)
+```
+
+### Catchment estimated resident population
+
+```{r EDA-pressures-Catch_ERP}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 10.4
+#| fig.cap: "Temporal trends in Catchment estimated Resident Population (Catch-ERP) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Catch_ERP_large.png", dpi = 300)
+```
+
+### Population density (pop/km²)
+
+```{r EDA-pressures-POP}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 10.4
+#| fig.cap: "Temporal trends in Population density (pop/km²) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_POP_large.png", dpi = 300)
+```
+
+### Mean sea level (m)
+
+```{r EDA-pressures-SL}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Mean sea level (m) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_SL_large.png", dpi = 300)
+```
+
+### Rainfall anomaly (mm)
+
+```{r EDA-pressures-Rainfall_anom}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Rainfall anomaly (mm) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Rainfall_anom_large.png", dpi = 300)
+```
+
+### Mean air temperature (℃)
+
+```{r EDA-pressures-AirTemp}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Mean air temperature (℃) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_AirTemp_large.png", dpi = 300)
+```
+
+### Mean air temperature anomaly (℃)
+
+```{r EDA-pressures-AirTemp_anom}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Mean air temperature anomaly (℃) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_AirTemp_anom_large.png", dpi = 300)
+```
+
+### Southern Oscillation Index
+
+```{r EDA-pressures-SOI}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Southern Oscillation Index within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_SOI_large.png", dpi = 300)
+```
+
+### Sea surface temperature anomaly (℃)
+
+```{r EDA-pressures-SST_anom}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Sea surface temperature anomaly (℃) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_SST_anom_large.png", dpi = 300)
+```
+
+### Total building activity ($B)
+
+```{r EDA-pressures-Building_total}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Total building activity ($B) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Building_total_large.png", dpi = 300)
+```
+
+### Engineering building activity ($B)
+
+```{r EDA-pressures-Building_eng}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Engineering building activity ($B) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Building_eng_large.png", dpi = 300)
+```
+
+### Non-Residential building activity ($B)
+
+```{r EDA-pressures-Building_non}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Non-Residential building activity ($B) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Building_non_large.png", dpi = 300)
+```
+
+### Residential building activity ($B)
+
+```{r EDA-pressures-Building_res}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in Residential building activity ($B) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Building_res_large.png", dpi = 300)
+```
+
+### Number of trade ships
+
+```{r EDA-pressures-Ship_trade}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in number of trade ships within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Ship_trade_large.png", dpi = 300)
+```
+
+### Number of container ships
+
+```{r EDA-pressures-Ship_cont}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in number of container ships within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Ship_cont_large.png", dpi = 300)
+```
+
+### Number of liquid bulk ships
+
+```{r EDA-pressures-Ship_liq}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in number of liquid bulk ships within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Ship_liq_large.png", dpi = 300)
+```
+
+### Number of car carrier ships
+
+```{r EDA-pressures-Ship_car}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in number of car carrier ships within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Ship_car_large.png", dpi = 300)
+```
+
+### Number of rig tenders ships
+
+```{r EDA-pressures-Ship_rig}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in number of rig tenders ships within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Ship_rig_large.png", dpi = 300)
+```
+
+### Number of livestock ships
+
+```{r EDA-pressures-Ship_live}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in number of livestock ships within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Ship_live_large.png", dpi = 300)
+```
+
+### Number of cruise ships
+
+```{r EDA-pressures-Ship_cruise}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in number of cruise ships within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Ship_cruise_large.png", dpi = 300)
+```
+
+### Number of dry bulk ships
+
+```{r EDA-pressures-Ship_dry}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 1.3
+#| fig.cap: "Temporal trends in number of dry bulk ships within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Ship_dry_large.png", dpi = 300)
+```
+
+### Five year moving average fire frequency (Km)
+
+```{r EDA-pressures-Fire_TotalKm_WA}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 10.4
+#| fig.cap: "Temporal trends in Five year moving average fire frequency (Km) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Fire_TotalKm_WA_large.png", dpi = 300)
+```
+
+### Five year standard deviation fire frequency (Km)
+
+```{r EDA-pressures-Fire_TotalKm_STDa}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 10.4
+#| fig.cap: "Temporal trends in Five year standard deviation fire frequency (Km) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Fire_TotalKm_STD_large.png", dpi = 300)
+```
+
+### Total fire area (Km²)
+
+```{r EDA-pressures-Fire_Areas}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 10.4
+#| fig.cap: "Temporal trends in Total fire area (Km²) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Fire_Areas_large.png", dpi = 300)
+```
+
+### Percentage fire area (%)
+
+```{r EDA-pressures-Fire_Areas_p}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 10.4
+#| fig.cap: "Temporal trends in Percentage fire area (%) within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Purple lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_pressures_Fire_Areas_p_large.png", dpi = 300)
+```
+
+## Routine samples (stressors)
+
+### Chlorophyl-a (µg/L)
+
+```{r EDA-chla-routine}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Chlorophyll-a (µg/L) for routine sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_routine_Chla_large.png", dpi = 300)
+```
+
+### Turbidity (NTU)
+
+```{r EDA-Turbidity-routine}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Turbidity (NTU) for routine sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_routine_Turbidity_large.png", dpi = 300)
+```
+
+### Dissolved Oxygen (% Saturation)
+
+```{r EDA-DO-routine}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Dissolved Oxygen (% Saturation) for routine sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_routine_DO_large.png", dpi = 300)
+```
+
+### Ammonia (µg/L)
+
+```{r EDA-NH3-routine}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Ammonia (µg/L) for routine sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_routine_NH3_large.png", dpi = 300)
+```
+
+### Filterable Reactive Phosphate (µg/L)
+
+```{r EDA-PO4-routine}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Filterable Reactive Phosphate (µg/L) for routine sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_routine_PO4_large.png", dpi = 300)
+```
+
+### NOx as N (µg/L)
+
+```{r EDA-NOx-routine}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in NOx as N (µg/L) for routine sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_routine_NOx_large.png", dpi = 300)
+```
 
 
+## Discrete samples (stressors)
+
+### Chlorophyl-a (µg/L)
+
+```{r EDA-chla-discrete}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Chlorophyll-a (µg/L) for discrete sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_Chla_large.png", dpi = 300)
+```
+
+### Turbidity (NTU)
+
+```{r EDA-Turbidity-discrete}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Turbidity (NTU) for routine sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_Turbidity_large.png", dpi = 300)
+```
+
+### Dissolved Oxygen (% Saturation)
+
+```{r EDA-DO-discrete}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Dissolved Oxygen (% Saturation) for discrete sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_DO_large.png", dpi = 300)
+```
+
+### Ammonia (µg/L)
+
+```{r EDA-NH3-discrete}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Ammonia (µg/L) for discrete sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_NH3_large.png", dpi = 300)
+```
+
+### Filterable Reactive Phosphate (µg/L)
+
+```{r EDA-PO4-discrete}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in Filterable Reactive Phosphate (µg/L) for discrete sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_PO4_large.png", dpi = 300)
+```
+
+### NOx as N (µg/L)
+
+```{r EDA-NOx-discrete}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 6.5
+#| fig.height: 5.2
+#| fig.cap: "Temporal trends in NOx as N (µg/L) for discrete sites within each of the Zones. Points represent collected observations at unique lat/long/Year combinations. Each individual point is 80% transparent, and thus darker points represent a greater quantity of observations with similar values. Faint lines join sets of observations collected at the same lat/long over time. Orange lines represent simple Generalized Additive Modeling splines with 95% confidence envelopes. Note, these are purely simple models that do not take into account any dependency structures (e.g. do not include random effects or autoregressive terms)."
+
+include_graphics("../output/figures/EDA_NOx_large.png", dpi = 300)
+```
+
+# Analyses
+
+## Statistical methodologies
+
+This project aims to explore relationships between a set of water
+quality stressors that are important targets of a Darwin Harbour water
+quality monitoring program and a collection of potential drivers
+(pressures).  In general, statistical explorations into potential
+associations between sets of variables can be a very difficult
+exercise.  The difficulties are often further exacerbated when the set
+of variables to be correlated originate from multiple different
+sources and are environmental data. <!-- particularly if those sources
+collect data at very different spatial and temporal scales.-->
+
+Firstly, most environmental stressors and pressures data are
+irregularly and sparsely collected as well as highly noisy.  That is,
+the observation space usually represents a tiny fraction of the full
+potential sampling domain.  Hence, the granularity of the data can
+limit the sensitivity of any analyses.
+
+Secondly, data assembled from disparate sources are typically
+collected on differing sparse spatial and temporal scales (as the
+collections are governed for different purposes).  Consequently, there
+are no guarantees that scales of the data will be relevant to the
+scales at which any underlying biochemical interactions actually take
+place.  Moreover, since the observations from different sources rarely
+align in space and time and the underlying conditions can fluctuate
+rapidly, only very large-scale (in time or space) drivers are going to
+manifest as observable associations.
+
+Finally, when performing large numbers of statistical analyses to
+explore a high-dimensional space, it is important to acknowledge that
+the likelihood of Type I errors (false statistical conclusions)
+increase dramatically.  Implicit in any single classical statistical
+analysis is notion that we base conclusions about entire populations
+on the single samples we have available.  If the patterns in these
+samples are highly structured (non-random), we conclude that there is
+evidence of the association.  However, it is possible that just by
+chance we happened to collect unusual samples that portray a pattern
+that is just an artefact and does not actually occur more broadly.
+The more of the analyses we perform, the more likely it is that at
+least one of these analyses purely reflects an artefact rather than a
+genuine pattern.  Hence, the presence of correlations or associations
+in samples does not necessarily mean that they definitely exist in the
+populations.
+
+Even if we accept that a given statistical correlation or association
+is genuine, it does not necessarily signify that the relationship is
+causal.  Two variables could co-vary as a result of both being driven
+by another unobserved (latent) influence.  Furthermore, in models that
+contain multiple covariates (predictors), the presence or absence of
+associations involving one predictor can be the result of confounding
+or masking due to other observed or unobserved influences.
+
+There are many different approaches that can be employed in order to
+explore the associations between sets of variables.  One approach is
+to fit univariate generalized linear (mixed) models (GLMM's) that
+relate a single _response_ (in this case stressor) to a small number
+of uncorrelated _predictors_ (pressures) within a hierarchical
+(spatial) structure.  GLMM's are well established statistical routines
+that evaluate the evidence for low-dimensional trends.
+
+Increased complexity can be explored via generalized additive (mixed)
+models (GAMMs).  Rather than fit simple linear (or polynomial) trends
+through data, GAMM's fit splines and thus are not constrained to
+evaluating evidence of very simple trends in the data.
+
+Both GLMMs and GAMMs are designed for relatively low-dimensional
+explorations of the data space.  Neither are well suited to exploring
+associations between a response and predictors when there are
+correlations among the predictors.  High correlations among pressures
+is a predictable feature of environmental data.  For example, climatic
+variables such as temperature, precipitation and wind are often highly
+correlated.
+
+Machine learning technologies are often better suited to higher
+dimensional problems.  Unfortunately, many of these are focused purely
+on prediction and are of little use in attribution - that is, these
+models are able to predict very well, however, they are typically
+unable to understand what predictors are the most important in driving
+the predicted patterns.  Boosted regression model (GBM) trees are an
+amalgamation of statisical and machine learning routines.  They are
+able to leverage the superior prediction capabilities of machine
+learning, with the attribution capabilities of statistical models.
+
+Although it is possible to fit a boosted regression tree with
+correlated predictors, it is important to understand that when doing
+so, the importance of the predictor most strongly correlated to the
+response will tend to be elevated at the expense of any other
+predictors correlated to this predictor.  The model is essentially
+saying that the other correlated predictors do not reveal much
+additional novel associations with the response that the other
+predictor has not already offered.
+
+Each of the above techniques (GLMM/GAMM and GBM) allow us to explore
+the associations from different angles.  Consequently, rather than
+considering them as competing candidate approaches and attempt to
+intuit which approach is more likely to be best in any given
+situation, I have elected to use both techniques in a complimentary
+manner.  Each approach will provide a different (yet not entirely
+independent) line of evidence of the strength and polarity of
+associations between the stressors and pressures.
+
+It should be noted that the GLMM/GAMM models feature only a single
+stressor at a time and therefore, stressors that are correlated to one
+another (and thus have similar relationships to the pressures) will
+show similar statistical outcomes.  Contrastingly, each GBM contains
+the full set of predictors and highly correlated predictors will tend
+to complete with one another and the most highly correlated to the
+response will typically win out.  Hence, in GBMs, the statistical
+outcomes associated with individual pressures that are highly
+correlated to one another may be profoundly different.  It is for this
+reason, that the two approaches can be seen as complimentary.
+
+
+### Generalised linear mixed effects models
+
+For each of the five stressors (ammonia, chlorophyll-a, dissolved
+oxygen, filterable reactive phosphorus and turbidity), a generalised
+linear mixed model relating the stressor to one of the 33 single focal
+pressures were fit against a Gamma (log link) distribution.  
+
+Regular model fitting protocols usually involve a cycle in which a
+model is fit, a range of associated model diagnostics are reviewed and
+if necessary, repeat the cycle with modifications of the model until
+the practitioner is satisfied that there is no evidence of a lack of
+model fit.  However, for the current project, there are too many
+modelling combinations to permit us to complete this regular cycle.
+Consequently, instead, each model was fit using a set of possible
+model candidates (see below) and then the model that best satisfied
+the model diagnostics was chosen.  Model diagnostic included tests for
+uniformity, (over) dispersion, outliers and residual quantile patterns
+all based on simulated residuals (DHARMa).
+
+If more than one model satisfied the diagnostic conditions, then the
+candidate model was selected on the basis of the lowest AIC (Akake
+Information Criterion).  All models were fit via Restricted/Residual
+Maximum Likelihood (REML) to minimise bias due to the random effects.
+
+- Model 1: mixed effect model with polynomial effects and first order auto-regressive structure 
+  $$
+  \begin{align}
+  y_{ij} &\sim{} \Gamma(\mu_{ij}, \phi)\\
+  log(\mu_{ij}) &= \beta_0 + \beta_1 x_{ij} + \beta_2 x_{ij}^2 + \beta_3 x_{ij}^3 + \gamma[Site_j] + \theta(y_{ij-1} - \mu_{ij-1})
+  \end{align}
+  $$
+  
+  where:
+  
+  - $y_{ij}$ is the $i^{th}$ observation in the $j^{th}$ Site
+  - $\mu_{ij}$ represents the expected mean of the $i^{th}$
+    observation in the $j^{th}$ Site
+  - $\phi$ represents the dispersion parameter of the gamma
+    distribution, controlling the shape of the distribution
+  - $\beta_0$, $\beta_1$, $\beta_2$ and $\beta_3$ are the polynomial
+    regression terms
+  - $\gamma[Site_j\$ is the random intercept for the $j^th$ Site
+  - $\theta(y_{ij-1} - \mu_{ij-1})$ is the stationary first order
+    autoregressive structure, indicating the effect of the lagged
+    dependent variable on the current mean within the $j^{th}$ Site.
+    It has a covariance of $\sigma^2 exp(-\theta|s-t|)$ where $s$ and
+    $t$ represent $y_i$ and $y_i-1$ respectively.
+
+- Model 2: mixed effect model with polynomial effects 
+  $$
+  \begin{align}
+  y_{ij} &\sim{} \Gamma(\mu_{ij}, \phi)\\
+  log(\mu_{ij}) &= \beta_0 + \beta_1 x_{ij} + \beta_2 x_{ij}^2 + \beta_3 x_{ij}^3 + \gamma[Site_j] 
+  \end{align}
+  $$
+  
+  where:
+  
+  - $y_{ij}$ is the $i^{th}$ observation in the $j^{th}$ Site
+  - $\mu_{ij}$ represents the expected mean of the $i^{th}$
+    observation in the $j^{th}$ Site
+  - $\phi$ represents the dispersion parameter of the gamma
+    distribution, controlling the shape of the distribution
+  - $\beta_0$, $\beta_1$, $\beta_2$ and $\beta_3$ are the polynomial
+    regression terms
+  - $\gamma[Site_j\$ is the random intercept for the $j^th$ Site
+
+- Model 3: mixed effect model with linear effects and first order auto-regressive structure 
+  $$
+  \begin{align}
+  y_{ij} &\sim{} \Gamma(\mu_{ij}, \phi)\\
+  log(\mu_{ij}) &= \beta_0 + \beta_1 x_{ij} + \gamma[Site_j] + \theta(y_{ij-1} - \mu_{ij-1})
+  \end{align}
+  $$
+  
+  where:
+  
+  - $y_{ij}$ is the $i^{th}$ observation in the $j^{th}$ Site
+  - $\mu_{ij}$ represents the expected mean of the $i^{th}$
+    observation in the $j^{th}$ Site
+  - $\phi$ represents the dispersion parameter of the gamma
+    distribution, controlling the shape of the distribution
+  - $\beta_0$ and $\beta_1$ are the linear regression terms
+  - $\gamma[Site_j\$ is the random intercept for the $j^th$ Site
+  - $\theta(y_{ij-1} - \mu_{ij-1})$ is the stationary first order
+    autoregressive structure, indicating the effect of the lagged
+    dependent variable on the current mean within the $j^{th}$ Site.
+    It has a covariance of $\sigma^2 exp(-\theta|s-t|)$ where $s$ and
+    $t$ represent $y_i$ and $y_i-1$ respectively.
+
+- Model 4: mixed effect model with linear effects
+  $$
+  \begin{align}
+  y_{ij} &\sim{} \Gamma(\mu_{ij}, \phi)\\
+  log(\mu_{ij}) &= \beta_0 + \beta_1 x_{ij} + \gamma[Site_j]
+  \end{align}
+  $$
+  
+  where:
+  
+  - $y_{ij}$ is the $i^{th}$ observation in the $j^{th}$ Site
+  - $\mu_{ij}$ represents the expected mean of the $i^{th}$
+    observation in the $j^{th}$ Site
+  - $\phi$ represents the dispersion parameter of the gamma
+    distribution, controlling the shape of the distribution
+  - $\beta_0$ and $\beta_1$ are the linear regression terms
+  - $\gamma[Site_j\$ is the random intercept for the $j^th$ Site
+
+- Model 5: additive mixed effect model
+  $$
+  \begin{align}
+  y_{ij} &\sim{} \Gamma(\mu_{ij}, \phi)\\
+  log(\mu_{ij}) &= \beta_0 + f(x_{ij}) + \beta_1 Year_{ij} + \gamma[Site_j]
+  \end{align}
+  $$
+  
+  where:
+  
+  - $y_{ij}$ is the $i^{th}$ observation in the $j^{th}$ Site
+  - $\mu_{ij}$ represents the expected mean of the $i^{th}$
+    observation in the $j^{th}$ Site
+  - $\phi$ represents the dispersion parameter of the gamma
+    distribution, controlling the shape of the distribution
+  - $\beta_0$ is the intercept
+  - $f(x_{ij})$ represents a penalised spline smoother function over
+    the $i^{th}$ covariate observation in the $j^{th}$ Site
+  - $\beta_1 Year_{ij}$ represents the linear effect of the $i^{th}$
+    Year in the $j^{th}$ Site
+  - $\gamma[Site_j\$ is the random intercept for the $j^th$ Site
+  
+- Model 6: additive effect model
+  $$
+  \begin{align}
+  y_{ij} &\sim{} \Gamma(\mu_{ij}, \phi)\\
+  log(\mu_{ij}) &= \beta_0 + f(x_{ij})
+  \end{align}
+  $$
+  
+  where:
+  
+  - $y_{ij}$ is the $i^{th}$ observation in the $j^{th}$ Site
+  - $\mu_{ij}$ represents the expected mean of the $i^{th}$
+    observation in the $j^{th}$ Site
+  - $\phi$ represents the dispersion parameter of the gamma
+    distribution, controlling the shape of the distribution
+  - $\beta_0$ is the intercept
+  - $f(x_{ij})$ represents a penalised spline smoother function over
+    the $i^{th}$ covariate observation in the $j^{th}$ Site
+  
+- Model 8: linear effect model
+  $$
+  \begin{align}
+  y_{ij} &\sim{} \Gamma(\mu_{ij}, \phi)\\
+  log(\mu_{ij}) &= \beta_0 + beta_1 x_{ij}
+  \end{align}
+  $$
+  
+  where:
+  
+  - $y_{ij}$ is the $i^{th}$ observation in the $j^{th}$ Site
+  - $\mu_{ij}$ represents the expected mean of the $i^{th}$
+    observation in the $j^{th}$ Site
+  - $\phi$ represents the dispersion parameter of the gamma
+    distribution, controlling the shape of the distribution
+  - $\beta_0$ is the intercept
+  - $\beta_1 x_{ij}$ represents the linear effect over the $i^{th}$
+    covariate observation in the $j^{th}$ Site
+
+The above models were fit for both routine and discrete sampling
+designs separately.  Finally, the models were also run for three
+different lag versions (lag 0: not lagged, lag 1: lag of one year, lag
+2: lag of two years) of each pressure.  These lags allow us to explore
+delayed effects of the drivers of the various pressures.
+
+### Gradient Boosted Models
+
+Gradient boosted models are a type of machine learning model that
+combine a ensemble of weak learners (typically recursive partitioning
+regression trees) to create a more accurate and powerful predictive
+model. A key component of this technique is boosting, which involves
+sequentially adding new models (trees) to incrementally learn the
+patterns in the training data.
+
+Briefly, gradient boosted models involve the following steps:
+
+- initialization: Initially, the model starts with a simple regression tree.
+- iterative training: the model is then trained iteratively to improve
+  its performance. In each iteration, a new weak learner, is added to
+  the model. This new learner is trained to focus on the data patterns
+  that were poorly predicted by the previous models.
+- gradient descent: during each iteration, the new weak learner is
+  trained to minimize the errors or residuals made by the previous
+  models. This is achieved using a technique called gradient
+  descent. The new model is trained to fit the negative gradient of
+  the loss function, with respect to the predictions made by the
+  previous models.
+- ensemble prediction: the predictions of all the weak learners are
+  combined to make the final prediction. Each weak learner's
+  prediction is weighted based on its performance, and the final
+  prediction is the sum of these weighted predictions.
+- regularization: to prevent overfitting, regularization techniques
+  such as shrinkage/learning rate and tree depth are
+  applied. Shrinkage reduces the contribution of each new model,
+  making the learning process slower and more conservative, while tree
+  depth limits the complexity of individual trees.
+
+Gradient boosted models have gained popularity due to their ability to
+handle complex and non-linear relationships in the data, handle a
+variety of data types, and provide accurate predictions. They are
+widely used in various domains, including regression, classification,
+and ranking tasks. 
+
+Regular gradient boosted models do not offer any uncertainty
+estimates.  In order to get estimates of uncertainty, it is necessary
+to bootstrap the model.  Boostraping involves repeatedly fitting of a
+model to randomly resampled (with replacement) data. 
+
+For the current project, 100 boostraped gradient boosted models were
+fit for each of the five stressors (ammonia, chlorophyll-a, dissolved
+oxygen, filterable reactive phosphorus and turbidity) for each of the
+routine and discrete sampling designs.  Each model contained the full
+set of pressures.  As with the GLMMs/GAMMs lagged versions of the
+models were also explore.  However, unlike the GLMM/GAMM models (which
+only ever included a single lag, in the gradient boosted models, each
+of the lagged versions of the pressures were added to the models.
+Hence, both unlagged and fully lagged versions of each model were fit.
+
+More specifically, each gradient boosted model comprised 10,000 trees,
+with a tree depth of 9, a bagging fraction of 0.5, a learning rate of
+0.001 and 3 cross validation folds.  Once fitted, each tree was pruned
+down via cross validation to prevent over-fitting.  The relative
+influences of each pressure was estimated as the relative number of
+tree splits involving that pressure.  For the purpose of graphical and
+tabular summaries, only pressures whose relative influence exceeded
+$100/p$ (where $p$ is the number of pressures) were retained.
+
+Pseudo R² values associated with each individual pressure in a model
+were determined according to the following equation: 
+
+$$ 
+R^2 = 1 - \frac{var(Pred - Obs)}{var(Obs)}
+$$ 
+
+where $Pred$ represents the partial predictions (predictions from the
+model when all other pressures are held constant) and $Obs$ represent
+the observed stressor values.
+
+## Summary of results
+
+With such a large number of model combinations (Routine/Discrete,
+lagged/non-lagged, five stressors, 33 pressures) as well as two
+approaches (GLMM/GAMM and GBM), it is challenging to distil all the
+results down into a small number of figures/tables that are able to
+highlight the main patterns.
+
+The following selections summarise all the findings in a series of
+cross summation tables broken down into spatial scales (whole harbour
+then each zone) for both routine and discrete sampling designs.  In
+each table, the five stressors appear in the columns and the top
+influential pressures across these stressors form the rows.  Each cell
+is further divided into the pseudo R² from the GBM (upper left of
+cells) and GLMM/GAMM (lower right of cells).  Further, cell triangles
+are shaded according to the magnitude (depth of colour) and polarity
+(red: negative, green: positive) of the correlation attributed to the
+focal pressure.
+
+Collectively, the two halves of each cell provide two lines of
+evidence and perspectives on the predictive influence of a stressor on
+a pressure.  For example, if both halves have relatively high pseudo
+R² values (and are similarity coloured), we can conclude that there is
+reasonably strong evidence that changes in the focal stressor are in
+some way associated with the focal pressure.  On the other hand, if
+only one half of the triangle is coloured, it might indicate that
+support for this association is less.
+
+If there are numerous pressures for a particular stressor that each
+have a similar pseudo R² and colour in the lower right side of a cell,
+yet this is not the case for the upper right side of the cell, this
+suggests that these pressures were all correlated to one another.  In
+such cases, it is likely that only one of the pressures is genuinely
+correlated with the stressor.  The pseudo R² values for the GBM are
+expected to be lower than their GLMM/GAMM counterparts since the
+influences of each stressor is potentially diluted in the former by
+the presence of the large number of additional (sometimes competing)
+stressors.
+
+### Routine samples (no lags)
+
+Across the whole harbour for routine samples, there is: 
+
+- evidence of weak positive associations between Total P and
+  Chlorophyll-a, Filterable reactive phosphate, NOx and Turbidity
+- some evidence of weak positive associations between Total suspended
+  solids and Chlorophyll-a and Filterable reactive phosphate
+- some evidence of weak positive associations between Volatile
+  suspended solids and Chlorophyll-a, Filterable reactive phosphate
+  and Turbidity
+- some evidence of weak positive associations between Estimated
+  resident population and all of the stressors (except perhaps
+  Ammonia)
+
+These patterns are likely the result of large spatial scale
+associations.  For example, if the sites in one zone are substantially
+higher in both Chlorophyll-a and Total P than the sites of other
+zones, then a positive association at the whole harbour scale will
+result.
+
+The patterns within the zones are more refined and are due to either
+smaller spatial scale patterns (differences between sites within the
+zones) or else temporal fluctuations (both variables changing over
+time):
+
+- there is weak evidence of a positive association between Dissolved oxygen and discharge volume in Buffalo Creek
+
+- in East Arm, there is evidence of a weak positive association between Chlorophyll-a and each of Rainfall anomaly and Estimated resident population 
+- in East Arm, there is some evidence of a weak negative association between Chlorophyll-a and each of Fire frequency and number of liquid bulk ships 
+- in East Arm, there is evidence of a positive association between Sea surface temperature anomaly and Filterable reactive phosphorus 
+- in East Arm, there is evidence of a weak negative association between Gross regional product and Filterable reactive phosphorus 
+- in East Arm, there is some evidence of a negative associations Filterable reactive phosphorus and each of the number of liquid bulk ships or rig tenders, yet a positive association with Cruise ships
+
+- in Central Harbour, there is evidence that Chlorophyll-a increases in association with estimated residual population and gross regional product and declines with increasing sea surface temperature anomaly
+- in Central Harbour, there is evidence that Filterable reactive phosphorus increases in association with declining sea surface temperature anomaly and gross regional product and perhaps increasing Total building activity
+- in Central Harbour, there is weak evidence that Turbidity increases in association with increasing Livestock shipping 
+
+- in the Elizabeth River, there is weak evidence that Chlorophyll-a decreases in association with increasing Gross regional product and Liquid bulk ships, yet increases with increasing mean air temperature and rainfall anomaly
+
+- in the Outer Harbour, there is weak evidence that Chlorophyll-a decreases in association with increasing Rainfall anomaly and total building activity
+- in the Outer Harbour, there is weak evidence that Filterable reactive phosphate increases in association with increasing numbers of Cruise ships
+
+- in Middle Arm, there is weak evidence that Filterable reactive phosphate decreases in association with increasing Gross regional product
+- in Middle Arm, there is weak evidence that Turbidity decreases in association with increasing number of dry bulk ships
+
+- in West Arm, there is evidence that Chlorophyll-a increases in association with increasing rainfall anomaly and estimated resident population and declines with increasing number of liquid bulk ships
+- in West Arm, there is weak evidence that Turbidity decreases in association with increasing Sea surface temperature anomaly 
+
+
+<!---BLOCK_LANDSCAPE_START--->
+
+### Whole harbour
+
+```{r summary_routine_WH_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the whole of the Darwin Harbour **routine samples**.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_Whole Harbour__noLags.png", dpi = 300)
+```
+
+```{r summary_discrete_WH_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the whole of the Darwin Harbour **discrete samples**.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Whole Harbour__noLags.png", dpi = 300)
+```
+
+### Buffalo Creek
+
+```{r summary_routine_Buffalo_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Buffalo Creek **routine samples**.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_Buffalo Creek__noLags.png", dpi = 300)
+```
+
+```{r summary_discrete_Buffalo_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Buffalo Creek **discrete samples**.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Buffalo Creek__noLags.png", dpi = 300)
+```
+
+### East Arm
+
+```{r summary_routine_EastArm_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the East Arm **routine samples**.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_East Arm__noLags.png", dpi = 300)
+```
+
+```{r summary_discrete_EastArm_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the East Arm **discrete samples**.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_East Arm__noLags.png", dpi = 300)
+```
+
+### Central Harbour
+
+```{r summary_routine_CentralHarbour_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Central Harbour routine samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_Central Harbour__noLags.png", dpi = 300)
+```
+
+### Elizabeth River
+
+```{r summary_routine_ElizabethRiver_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Elizabeth River routine samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_Elizabeth River__noLags.png", dpi = 300)
+```
+
+### Outer Harbour
+
+```{r summary_routine_OuterHarbour_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Outer Harbour routine samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_Outer Harbour__noLags.png", dpi = 300)
+```
+
+### Middle Arm
+
+```{r summary_routine_MiddleArm_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Middle Arm routine samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_Middle Arm__noLags.png", dpi = 300)
+```
+
+### West Arm
+
+```{r summary_routine_WestArm_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the West Arm routine samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_West Arm__noLags.png", dpi = 300)
+```
+
+### Shoal Bay
+
+```{r summary_routine_ShoalBay_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Shoal Bay routine samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Routine_Shoal Bay__noLags.png", dpi = 300)
+```
+
+
+<!---BLOCK_LANDSCAPE_STOP--->
+
+### Discrete samples
+
+<!---BLOCK_LANDSCAPE_START--->
+
+### Whole harbour
+
+```{r summary_discrete_WH_nolags_a}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the whole of the Darwin Harbour discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Whole Harbour__noLags.png", dpi = 300)
+```
+
+### Buffalo Creek
+
+```{r summary_discrete_Buffalo_nolags_a}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Buffalo Creek discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Buffalo Creek__noLags.png", dpi = 300)
+```
+
+### East Arm
+
+```{r summary_discrete_EastArm_nolags_a}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the East Arm discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_East Arm__noLags.png", dpi = 300)
+```
+
+### Central Harbour
+
+```{r summary_discrete_CentralHarbour_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Central Harbour discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Central Harbour__noLags.png", dpi = 300)
+```
+
+### Elizabeth River
+
+```{r summary_discrete_ElizabethRiver_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Elizabeth River discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Elizabeth River__noLags.png", dpi = 300)
+```
+
+### Outer Harbour
+
+```{r summary_discrete_OuterHarbour_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Outer Harbour discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Outer Harbour__noLags.png", dpi = 300)
+```
+
+### Middle Arm
+
+```{r summary_discrete_MiddleArm_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Middle Arm discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Middle Arm__noLags.png", dpi = 300)
+```
+
+### West Arm
+
+```{r summary_discrete_WestArm_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the West Arm discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_West Arm__noLags.png", dpi = 300)
+```
+
+### Shoal Bay
+
+```{r summary_discrete_ShoalBay_nolags}
+#| results: 'markdown'
+#| eval: TRUE
+#| fig.show: 'hold'
+#| fig.align: 'center'
+#| fig.width: 8.5
+#| fig.height: 4.533
+#| fig.cap: "Cross summarisation of pseudo-R² values from boosted regression trees (upper left of table cells) and generalized (additive) models (lower right of table cells) associated with each combination of stressors (columns) and pressures (rows) for the Shoal Bay discrete samples.  Cells are also coloured according to the degree of correlation (R - derived from R² and polarity of trends).  The darker the cell shading, the larger in magnitude the R².  Green and orange/red shading signify positive and negative trends respectively. "
+
+include_graphics("../output/figures/summary_table__Discrete_Shoal Bay__noLags.png", dpi = 300)
+```
+
+
+<!---BLOCK_LANDSCAPE_STOP--->
 ::: {.content-visible when-format="html"}
 
 # About this document

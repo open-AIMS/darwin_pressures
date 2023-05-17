@@ -60,6 +60,15 @@ cat(paste0("Resps,Preds,Lag,Type\n"),
                       dpi = 72
                      )
               )
+        future_walk2(.x = data.EDA.routine$name,
+              .y = data.EDA.routine$EDA,
+              ~ggsave(filename = paste0(FIGS_PATH, '/EDA_routine_',.x, '_large.png'),
+                      .y,
+                      width = 10,
+                      height = 8,
+                      dpi = 300
+                     )
+              )
         ## ----end
     }
     ## Pressures - these are invariant to response scale
@@ -97,6 +106,15 @@ cat(paste0("Resps,Preds,Lag,Type\n"),
                       width = 10,
                       height = 8,
                       dpi = 72
+                     )
+              )
+        future_walk2(.x = data.EDA$name,
+              .y = data.EDA$EDA,
+              ~ggsave(filename = paste0(FIGS_PATH, '/EDA_',.x, '_large.png'),
+                      .y,
+                      width = 10,
+                      height = 8,
+                      dpi = 300
                      )
               )
         ## ----end
@@ -139,11 +157,22 @@ cat(paste0("Resps,Preds,Lag,Type\n"),
             FACETS <- data.EDA %>% pull(Catchment) %>% unique() %>% length()
             NCOL <- wrap_dims(FACETS, ncol = 3)[2]
             NROW <- wrap_dims(FACETS, ncol = 3)[1]
+            cat(paste0(
+                "Measures: ", MEASURE,
+                "\nNCOL: ", NCOL,
+                "\nNROW: ", NROW,
+                "\ncalc: ", (6.5 * ((NROW*2.7)/(NCOL*4.5))),
+                "\n\n"))
             ggsave(filename = paste0(FIGS_PATH, "/EDA_pressures_",MEASURE,".png"),
                    plot = gg,
                    width = NCOL * 4.5,
                    height = NROW * 2.7,
                    dpi = 72)
+            ggsave(filename = paste0(FIGS_PATH, "/EDA_pressures_",MEASURE,"_large.png"),
+                   plot = gg,
+                   width = NCOL * 4.5,
+                   height = NROW * 2.7,
+                   dpi = 300)
         }
         ## ----end
     }

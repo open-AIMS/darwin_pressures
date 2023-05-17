@@ -47,7 +47,7 @@ FOCAL_RESPS <- var_lookup %>%
     ggsave(filename = paste0(FIGS_PATH, "/map_spatial.png"),
            width = 7,
            height = 8,
-           dpi = 72)
+           dpi = 300)
     ## ----end
 }
 ## Spatial - sub-catchments
@@ -84,11 +84,11 @@ FOCAL_RESPS <- var_lookup %>%
     ggsave(filename = paste0(FIGS_PATH, "/map_spatial_subcatchments.png"),
            width = 8,
            height = 8,
-           dpi = 72)
+           dpi = 300)
     ## ----end
     ## ---- process data spatial subcatchments map combined
     ggsave(filename = paste0(FIGS_PATH, "/map_spatial_subcatchments_combined.png"),
-           p + p2,
+           p + p2 + plot_annotation(tag_levels = 'a', tag_suffix = ")"),
            width = 16,
            height = 8,
            dpi = 300)
@@ -160,6 +160,7 @@ FOCAL_RESPS <- var_lookup %>%
             axis.title = element_blank(),
             axis.text.y = element_text(size = 7),
             ## axis.ticks.y = element_blank(),
+            axis.text.x = element_text(angle = 45, hjust = 1), 
             legend.text.align = 0,
             strip.text.y = element_text(angle = 0),
             panel.spacing.x = unit("0.5", "cm")
@@ -171,7 +172,7 @@ FOCAL_RESPS <- var_lookup %>%
         p,
         width = 12,
         height = 10,
-        dpi = 72
+        dpi = 300
     )
     ## ----end
     ## ---- process data 2012_2015 map
@@ -183,7 +184,7 @@ FOCAL_RESPS <- var_lookup %>%
     ggsave(filename = paste0(FIGS_PATH, "/map_wq__2012_2015.png"),
            width = 7,
            height = 8,
-           dpi = 72)
+           dpi = 300)
     ## ----end
     
     ## ---- process data 2016_2022
@@ -260,6 +261,13 @@ FOCAL_RESPS <- var_lookup %>%
         height = 12,
         dpi = 72
     )
+    ggsave(
+        filename = paste0(FIGS_PATH, "/design_wq_2016_large.png"),
+        p,
+        width = 12,
+        height = 12,
+        dpi = 300
+    )
     ## ----end
     ## ---- process data 2016_2022 map
     ggplot() +
@@ -281,6 +289,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 7,
            height = 9,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__2016_2022_large.png"),
+           width = 7,
+           height = 9,
+           dpi = 300)
 
     
     ggplot() +
@@ -296,6 +308,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 7,
            height = 8,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__2016_2022_all_large.png"),
+           width = 7,
+           height = 8,
+           dpi = 300)
     ## ----end
 
     ## ---- process data 2018 alterations
@@ -370,6 +386,13 @@ FOCAL_RESPS <- var_lookup %>%
         height = 12,
         dpi = 72
     )
+    ggsave(
+        filename = paste0(FIGS_PATH, "/design_wq_2018_large.png"),
+        p,
+        width = 12,
+        height = 12,
+        dpi = 300
+    )
     ## ----end
     ## ---- process data 2018 alterations map
     ggplot() +
@@ -391,6 +414,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 7,
            height = 5,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__2018_large.png"),
+           width = 7,
+           height = 5,
+           dpi = 300)
 
     
     ggplot() +
@@ -406,6 +433,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 7,
            height = 8,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__2018_all_large.png"),
+           width = 7,
+           height = 8,
+           dpi = 300)
     ## ----end
 
     ## ---- process data Routine sites
@@ -435,6 +466,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 7,
            height = 9,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq__routine_sites_large.png"),
+           width = 7,
+           height = 9,
+           dpi = 300)
     ## ----end
 
     ## ---- process data wq combine
@@ -513,6 +548,7 @@ FOCAL_RESPS <- var_lookup %>%
             axis.title = element_blank(),
             axis.text.y = element_blank(),
             axis.ticks.y = element_blank(),
+            axis.text.x = element_text(angle = 45, hjust = 1),
             legend.text.align = 0,
             strip.text.y = element_text(angle = 0),
             panel.spacing.x = unit("0.5", "cm")
@@ -525,6 +561,13 @@ FOCAL_RESPS <- var_lookup %>%
         width = 15,
         height = 12,
         dpi = 72
+    )
+    ggsave(
+        filename = paste0(FIGS_PATH, "/design_wq_routine_large.png"),
+        p,
+        width = 15,
+        height = 12,
+        dpi = 300
     )
     ## ----end
     
@@ -560,6 +603,7 @@ FOCAL_RESPS <- var_lookup %>%
             axis.title = element_blank(),
             axis.text.y = element_blank(),
             axis.ticks.y = element_blank(),
+            axis.text.x = element_text(angle = 45, hjust = 1),
             legend.text.align = 0,
             strip.text.y = element_text(angle = 0),
             panel.spacing.x = unit("0.5", "cm")
@@ -572,6 +616,13 @@ FOCAL_RESPS <- var_lookup %>%
         width = 15,
         height = 12,
         dpi = 72
+    )
+    ggsave(
+        filename = paste0(FIGS_PATH, "/design_wq_large.png"),
+        p,
+        width = 15,
+        height = 12,
+        dpi = 300
     )
     ## ----end
 
@@ -602,6 +653,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 7,
            height = 7,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq_routine_large.png"),
+           width = 7,
+           height = 7,
+           dpi = 300)
     ## ----end
     
     ## ---- process data combine map Discrete
@@ -628,13 +683,17 @@ FOCAL_RESPS <- var_lookup %>%
                 aes(colour = Source)) +
         facet_wrap(~Year) +
         theme_bw() +
-        theme(legend.position = c(0.01, 0.01),
-              legend.justification = c(0,0)) ->
+        theme(legend.position = c(0.99, 0.01),
+              legend.justification = c(1,0)) ->
         p
     ggsave(filename = paste0(FIGS_PATH, "/map_wq.png"),
            width = 7,
            height = 7,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq_large.png"),
+           width = 7,
+           height = 7,
+           dpi = 300)
 
     
     ggplot() +
@@ -642,14 +701,18 @@ FOCAL_RESPS <- var_lookup %>%
         geom_sf(data = wq.spatial,
                 aes(colour = Source)) +
         theme_bw() +
-        theme(legend.position = c(0.01, 0.01),
-              legend.justification = c(0,0)) ->
+        theme(legend.position = c(0.99, 0.01),
+              legend.justification = c(1,0)) ->
         p
     p
     ggsave(filename = paste0(FIGS_PATH, "/map_wq_all.png"),
            width = 7,
            height = 8,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_wq_all_large.png"),
+           width = 7,
+           height = 8,
+           dpi = 300)
     ## ----end
     
     cat("WQ data processed\n\n")
@@ -803,6 +866,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 12,
            height = 10,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/design_primary_large.png"),
+           width = 12,
+           height = 10,
+           dpi = 300)
     ## ----end
 
     ## ---- process data PRIMARY map
@@ -840,6 +907,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 6,
            height = 8,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/map_primary_large.png"),
+           width = 6,
+           height = 8,
+           dpi = 300)
     ## ----end
     cat("Primary point data processed\n\n")
 }
@@ -962,6 +1033,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 12,
            height = 10,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/design_catchment_erp_large.png"),
+           width = 12,
+           height = 10,
+           dpi = 300)
     ## ----end
     ## ---- process data catchment_erp map
     ## catchment_erp.spatial <- catchment_erp %>%
@@ -1114,6 +1189,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 12,
            height = 10,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/design_fire_freq_large.png"),
+           width = 12,
+           height = 10,
+           dpi = 300)
     ## ----end
     cat("Fire frequency data processed\n\n")
 
@@ -1216,6 +1295,10 @@ FOCAL_RESPS <- var_lookup %>%
            width = 12,
            height = 10,
            dpi = 72)
+    ggsave(filename = paste0(FIGS_PATH, "/design_fire_areas_large.png"),
+           width = 12,
+           height = 10,
+           dpi = 300)
     ## ----end
     cat("Fire areas data processed\n\n")
 }
