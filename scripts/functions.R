@@ -1811,9 +1811,10 @@ glimpse_like_table <- function(dat) {
                                      Max = ~ format(max(., na.rm = TRUE), "%Y-%m-%d")),
                        logical = sfl(Values = ~ skimr::top_counts(.))
                        )
-
-  dat %>%
-    my_skim() %>%
+  sdat <-
+      dat %>%
+      my_skim()
+  sdat %>%
     focus(Missing = n_missing, any_of(c("character.Min", "character.Max", "character.Values",
                                         "numeric.Values", "numeric.Min", "numeric.Max",
                                         "POSIXct.Values", "POSIXct.Min", "POSIXct.Max",
@@ -1829,8 +1830,19 @@ glimpse_like_table <- function(dat) {
                 -ends_with(".Min"), -ends_with(".Max"), -ends_with(".Values")) %>%
   flextable::flextable() %>%
   flextable::fontsize(size = 9, part = "all") %>%
-  flextable::line_spacing(space = 0.1) %>%
-  flextable::set_table_properties(layout = "autofit") %>%
+  ## flextable::line_spacing(space = 0.2, part = "body") %>%
+  ## flextable::line_spacing(space = 0, part = "header") %>%
+  ## flextable::set_table_properties(layout = "autofit") %>%
   ## flextable::autofit() %>%
-  flextable::align(j = c(3,4), align = "right")
+    flextable::align(j = c(3,4), align = "right") %>%
+    flextable::padding(padding.top = 0.1, padding.bottom = 0.2, part = "body") %>%
+    flextable::padding(padding.bottom = 5, part = "header") %>%
+    flextable::padding(padding.bottom = 0, part = "body") %>%
+    flextable::padding(i = nrow(sdat), padding.bottom = 5, part = "body") %>%
+    flextable::padding(padding.top = 1, part = "body") %>%
+    width(j = 1, width = 1, unit = "in") %>%
+    width(j = 2, width = 1, unit = "in")  %>%
+    width(j = 3:4, width = 0.9, unit = "in") %>%
+    width(j = 5, width = 0.9, unit = "in") %>%
+    width(j = 6, width = 6.27-(2 + (0.9*3)), unit = "in")
 }

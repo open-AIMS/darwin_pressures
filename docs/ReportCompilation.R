@@ -24,11 +24,16 @@ PREP_STAGE <- 1  # produce the coverpage (CoverPage.docx) from the coverpage tem
     ## ----end
     ## ---- ReadCoverSheetTemplate
     if (PREP_STAGE == 1) {
-        doc <- read_docx("resources/CoverPage_template.docx")
+        doc <- read_docx("resources/CoverPage_template_2023.docx")
 
         doc <- cursor_reach(doc, 'TITLE')
 
         for (i in 1:length(metadata)) {
+            if (str_detect(metadata[i], "today")) {
+                metadata[i] <- str_replace(metadata[i], "today\\(\\)",
+                                           format(lubridate::today(), "%d/%m/%Y"))
+            }
+            
             doc <- doc %>%
                 body_replace_all_text(old_value = names(metadata)[i],
                                       new_value = metadata[[i]],
@@ -59,8 +64,8 @@ PREP_STAGE <- 1  # produce the coverpage (CoverPage.docx) from the coverpage tem
         set_doc_properties(creator = "Murray Logan", title = metadata$TITLE, created = Sys.time()) #%>%
         ## footers_replace_all_text(old_value = 'Marie Roman',
         ##                          new_value = metadata$TITLE,
-        ##                          only_at_cursor = FALSE, fixed = FALSE, warn=TRUE) %>% 
-    doc %>% print(target = '00_main_Optimisation.docx')
+        ##                          only_at_cursor = FALSE, fixed = FALSE, warn=TRUE) 
+    doc %>% print(target = 'Darwin_Harbour_stressors_and_pressures.docx')
     ## ----end
 }
 ## ----end

@@ -22,7 +22,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like WQ 2012_2015
     glimpse_like_table(dat = wq) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption("Overview of the supplied 2012-2015 water quality data.",
                  word_stylename = "Table Caption",
                  autonum = run_autonum(seq_id = "tab",
@@ -43,7 +42,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like WQ 2016_2022
     glimpse_like_table(dat = wq) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied 2016-2022 water quality data.")
@@ -64,7 +62,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like WQ 2018 alterations
     glimpse_like_table(dat = wq) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied modified 2018 water quality data.")
@@ -85,7 +82,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like WQ Routine sites
     glimpse_like_table(dat = routine_sites) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the lookup of list of routine sites from the water quality data.")
@@ -115,7 +111,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like PRIMARY
     glimpse_like_table(dat = primary) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied point source (total nitrogen, total phosphorus, total suspended solids and volitile suspended solids) data.")
@@ -144,7 +139,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like ERP
     glimpse_like_table(dat = erp) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied estimated resident population (ERP) and gross regional product (GRP) data.")
@@ -173,7 +167,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like catchmentERP
     glimpse_like_table(dat = catchment_erp) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied catchment estimated resident population (ERP) data population density.")
@@ -202,7 +195,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like fire_freq
     glimpse_like_table(dat = fire_freq) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied fire frequency data.")
@@ -231,7 +223,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like fire_areas
     glimpse_like_table(dat = fire_areas) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied fire frequency data in area.")
@@ -260,7 +251,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like fire_areas_p
     glimpse_like_table(dat = fire_areas_p) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied fire frequency percentage data in percentages.")
@@ -289,7 +279,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like sea_level_cal
     glimpse_like_table(dat = sea_level_cal) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied annual sea levels from BOM (calendar years).")
@@ -318,7 +307,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like sea_level_fin
     glimpse_like_table(dat = sea_level_fin) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied annual sea levels from BOM (financial years).")
@@ -347,7 +335,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like rainfall_cal
     glimpse_like_table(dat = sea_level_cal) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied annual total rainfall data (per calendar year).")
@@ -376,7 +363,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like rainfall_fin
     glimpse_like_table(dat = sea_level_fin) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied annual total rainfall data (per financial year).")
@@ -405,7 +391,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like rainfall_anom
     glimpse_like_table(dat = rainfall_anom) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied annual total rainfall anomaly data.")
@@ -434,7 +419,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like temp
     glimpse_like_table(dat = temp) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied mean annual air temperature data.")
@@ -463,7 +447,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like temp_anom
     glimpse_like_table(dat = temp_anom) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied max annual air temperature anomaly data.")
@@ -492,7 +475,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like SOI_cal
     glimpse_like_table(dat = SOI_cal) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied annual southern oscillation index (SOI) data (calendar year).")
@@ -521,7 +503,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like SOI_fin
     glimpse_like_table(dat = SOI_fin) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied annual southern oscillation index (SOI) data (financial year).")
@@ -550,7 +531,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like SST_anom
     glimpse_like_table(dat = SST_anom) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied annual sea surface temperature (SST) anomaly data.")
@@ -579,7 +559,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like build
     glimpse_like_table(dat = build) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied building activity data.")
@@ -609,7 +588,6 @@ source('../scripts/functions.R')
     ## ----end
     ## ---- glimpse-like ship
     glimpse_like_table(dat = ship) %>%
-      padding(padding.top = 0.1, padding.bottom = 0.1, part = "all") %>%
       set_caption(
         as_paragraph(
           as_chunk("Overview of the supplied ship counts data.")
